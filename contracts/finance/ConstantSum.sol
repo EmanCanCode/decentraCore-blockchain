@@ -4,7 +4,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 
 /// @notice A simple implementation of a constant sum AMM with a 0.3% fee
-/// @author Emmanuel Douge - EmanCanCode@github
+/// @author Emmanuel Douge - https://github.com/EmanCanCode/DeFi/blob/main/contracts/ConstantSum.sol
 contract ConstantSum {
     // ----- STATE VARIABLES ----- //
 
