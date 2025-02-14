@@ -2,13 +2,21 @@
 pragma solidity ^0.8.22;
 
 import {ERC1155} from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-contract RealEstate is ERC1155, Ownable {
+
+contract RealEstate is ERC1155 {
+    address public owner;
     // mapping from token ID to custom URI
     mapping(uint256 => string) private _tokenURIs;
 
-    constructor(address initialOwner) ERC1155("") Ownable(initialOwner) {}
+    constructor(address initialOwner) ERC1155("") {
+        owner = initialOwner;
+    }
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only the owner can call this function");
+        _;
+    }
 
     // override the uri function to return a token-specific URI
     function uri(uint256 tokenId) public view override returns (string memory) {
