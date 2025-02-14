@@ -32,8 +32,8 @@ contract ConstantProduct {
 
     // ----- EVENTS ----- //
 
-    event AddedLiquidity (address indexed to, uint amount);
-    event RemovedLiquidity (address indexed from, uint amount);
+    event AddedLiquidity (address indexed to, uint shares);
+    event RemovedLiquidity (address indexed from, uint shares);
     event Swapped (address indexed from, address indexed to, uint amountReceived, uint amountReturned);
 
     // ----- PRIVATE FUNCTIONS ----- //
@@ -159,6 +159,7 @@ contract ConstantProduct {
             x = amount of tokenA
             y = amount of tokenB 
         */
+        // require that the product of the reserves is equal to the product of the new reserves
         if (reserveA > 0 || reserveB > 0) {
             require(reserveA * _amountB == reserveB * _amountA, "dy / dx != y / x");  // quick math - cross multiply instead of dividing
         }
