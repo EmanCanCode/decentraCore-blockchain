@@ -108,7 +108,7 @@ contract ConstantProduct {
             : (tokenB, tokenA, reserveB, reserveA);
         require(
             tokenReceived.transferFrom(msg.sender, address(this), _amountReceived),
-            "TransferFrom in failed"
+            "TransferFrom failed"
         );
 
         // Calculate _amountReturned, include fees - standard fee is 0.3%
