@@ -3,20 +3,15 @@ pragma solidity ^0.8.24;
 import "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 
-/// @author Emmanuel Douge - https://github.com/EmanCanCode/realEstate/blob/main/contracts/Escrow.sol
-enum State {
-    Created,
-    Active,
-    Completed,
-    Cancelled
-}
 
+// nft transferred to this contract from the factory.createEscrow()
+/// @author Emmanuel Douge - https://github.com/EmanCanCode/realEstate/blob/main/contracts/Escrow.sol
 contract Escrow is IERC1155Receiver {
     bool private locked; // used for reentrancy guard
     address public immutable nft_address; // nft's address
     uint256 public immutable nft_id; // nft's id
     uint8 public fee = 1; // 1% fee
-    uint8 public purchase_count; // number of nfts to be purchased, erc1155 nfts can have multiple copies (apartment units, etc)
+    uint8 public nft_count; // number of nfts to be purchased, erc1155 nfts can have multiple copies (apartment units, etc)
     uint256 public purchase_price; // purchase price for the house
     uint256 public immutable earnest_amount; // earnest amount
     address payable public immutable seller; // seller's address
@@ -33,6 +28,7 @@ contract Escrow is IERC1155Receiver {
     constructor(
         address _nft_address,
         uint256 _nft_id,
+        uint8 _nft_count,
         uint256 _purchase_price,
         uint256 _earnest_amount,
         address payable _seller,
@@ -44,6 +40,7 @@ contract Escrow is IERC1155Receiver {
         factory = msg.sender;
         nft_address = _nft_address;
         nft_id = _nft_id;
+        nft_count = _nft_count;
         purchase_price = _purchase_price;
         earnest_amount = _earnest_amount;
         seller = _seller;
@@ -106,14 +103,6 @@ contract Escrow is IERC1155Receiver {
         // buyer must deposit the earnest amount
         require(msg.value == earnest_amount, "Incorrect amount");
         require(deposit_balance[msg.sender] == 0, "Already deposited");
-        // ensure that the NFT was transferred to the contract
-        IERC1155(nft_address).safeTransferFrom(
-            seller,
-            address(this),
-            nft_id,
-            purchase_count,
-            ""
-        );
         // buyer's deposit balance is updated
         deposit_balance[msg.sender] += msg.value;
 
@@ -153,7 +142,7 @@ contract Escrow is IERC1155Receiver {
             address(this),
             seller,
             nft_id,
-            purchase_count,
+            nft_count,
             ""
         );
 
@@ -207,7 +196,7 @@ contract Escrow is IERC1155Receiver {
                 address(this),
                 finance_contract,
                 nft_id,
-                purchase_count,
+                nft_count,
                 ""
             );
         } else {
@@ -216,7 +205,7 @@ contract Escrow is IERC1155Receiver {
                 address(this),
                 buyer,
                 nft_id,
-                purchase_count,
+                nft_count,
                 ""
             );
         }
@@ -270,4 +259,11 @@ contract Escrow is IERC1155Receiver {
     ) external pure override returns (bool) {
         return interfaceId == type(IERC1155Receiver).interfaceId;
     }
+}
+
+enum State {
+    Created,
+    Active,
+    Completed,
+    Cancelled
 }
