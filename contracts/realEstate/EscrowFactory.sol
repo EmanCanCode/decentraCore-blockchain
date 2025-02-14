@@ -38,123 +38,123 @@ contract EscrowFactory {
 
     /// @notice Verifies escrow parameters and signatures, then marks escrowId as verified.
     function verifyEscrowData(
-        EscrowParams memory params,
+        EscrowParams memory _params,
         bytes memory _seller_sig,
         bytes memory _buyer_sig,
-        bytes memory _lender_sig // must be empty if params.lender == address(0)
+        bytes memory _lender_sig // must be empty if _params.lender == address(0)
     ) public returns (bytes32 escrowId) {
         // Get the nonce value that should be used (without updating state yet)
-        uint currentNonce = nonce[params.buyer][params.lender] + 1;
+        uint currentNonce = nonce[_params.buyer][_params.lender] + 1;
         // Compute the message hash for signing using our struct and nonce
-        bytes32 messageHash = _computeMessageHash(params, currentNonce);
+        bytes32 messageHash = _computeMessageHash(_params, currentNonce);
         // Apply the Ethereum Signed Message prefix (EIP-191)
         bytes32 signedMsg = _computeSignedMessage(messageHash);
         // Verify signatures
-        _verifySignatures(signedMsg, params, _seller_sig, _buyer_sig, _lender_sig);
+        _verifySignatures(signedMsg, _params, _seller_sig, _buyer_sig, _lender_sig);
         // Compute escrowId using key parameters (including nonce)
-        escrowId = _computeEscrowId(params, currentNonce);
+        escrowId = _computeEscrowId(_params, currentNonce);
         verifiedEscrowIds[escrowId] = true;
-        emit EscrowVerified(escrowId, params.buyer, params.seller, currentNonce);
+        emit EscrowVerified(escrowId, _params.buyer, _params.seller, currentNonce);
     }
 
     /// @notice Creates the escrow contract from verified parameters.
     function createEscrowFromVerified(
-        EscrowParams memory params,
-        bytes32 escrowId
-    ) public returns (address escrowAddress) {
-        require(verifiedEscrowIds[escrowId], "Escrow parameters not verified");
+        EscrowParams memory _params,
+        bytes32 _escrowId
+    ) public returns (address _escrowAddress) {
+        require(verifiedEscrowIds[_escrowId], "Escrow parameters not verified");
         // Recompute current nonce to ensure consistency
-        uint currentNonce = nonce[params.buyer][params.lender] + 1;
-        bytes32 computedEscrowId = _computeEscrowId(params, currentNonce);
-        require(escrowId == computedEscrowId, "Escrow ID mismatch");
+        uint currentNonce = nonce[_params.buyer][_params.lender] + 1;
+        bytes32 computedEscrowId = _computeEscrowId(_params, currentNonce);
+        require(_escrowId == computedEscrowId, "Escrow ID mismatch");
         // Update nonce and clear the verification flag
-        nonce[params.buyer][params.lender] = currentNonce;
-        verifiedEscrowIds[escrowId] = false;
+        nonce[_params.buyer][_params.lender] = currentNonce;
+        verifiedEscrowIds[_escrowId] = false;
 
         // Deploy new Escrow contract
         Escrow escrow = new Escrow(
-            params.nft_address,
-            params.nft_id,
-            params.nft_count,
-            params.purchase_price,
-            params.earnest_amount,
-            payable(params.seller),
-            payable(params.buyer),
-            params.inspector,
-            params.lender,
-            params.appraiser
+            _params.nft_address,
+            _params.nft_id,
+            _params.nft_count,
+            _params.purchase_price,
+            _params.earnest_amount,
+            payable(_params.seller),
+            payable(_params.buyer),
+            _params.inspector,
+            _params.lender,
+            _params.appraiser
         );
-        escrowAddress = address(escrow);
-        escrows[escrowId] = escrowAddress;
+        _escrowAddress = address(escrow);
+        escrows[_escrowId] = _escrowAddress;
 
         // Transfer NFT from the seller to the new escrow contract
-        IERC1155(params.nft_address).safeTransferFrom(
-            params.seller,
-            escrowAddress,
-            params.nft_id,
-            params.nft_count,
+        IERC1155(_params.nft_address).safeTransferFrom(
+            _params.seller,
+            _escrowAddress,
+            _params.nft_id,
+            _params.nft_count,
             ""
         );
 
-        emit EscrowCreated(escrowAddress, escrowId, params.buyer, params.seller, currentNonce);
+        emit EscrowCreated(_escrowAddress, _escrowId, _params.buyer, _params.seller, currentNonce);
     }
 
     // --- Helper functions ---
 
     function _computeMessageHash(
-        EscrowParams memory params,
-        uint currentNonce
+        EscrowParams memory _params,
+        uint _currentNonce
     ) internal pure returns (bytes32) {
         return keccak256(
             abi.encodePacked(
-                params.nft_address,
-                params.nft_id,
-                params.nft_count,
-                params.purchase_price,
-                params.earnest_amount,
-                params.seller,
-                params.buyer,
-                params.inspector,
-                params.lender,
-                params.appraiser,
-                currentNonce
+                _params.nft_address,
+                _params.nft_id,
+                _params.nft_count,
+                _params.purchase_price,
+                _params.earnest_amount,
+                _params.seller,
+                _params.buyer,
+                _params.inspector,
+                _params.lender,
+                _params.appraiser,
+                _currentNonce
             )
         );
     }
 
-    function _computeSignedMessage(bytes32 messageHash) internal pure returns (bytes32) {
-        return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", messageHash));
+    function _computeSignedMessage(bytes32 _messageHash) internal pure returns (bytes32) {
+        return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", _messageHash));
     }
 
     function _computeEscrowId(
-        EscrowParams memory params,
-        uint currentNonce
+        EscrowParams memory _params,
+        uint _currentNonce
     ) internal pure returns (bytes32) {
         return keccak256(
             abi.encodePacked(
-                params.buyer,
-                params.seller,
-                params.nft_address,
-                params.nft_id,
-                currentNonce
+                _params.buyer,
+                _params.seller,
+                _params.nft_address,
+                _params.nft_id,
+                _currentNonce
             )
         );
     }
 
     function _verifySignatures(
-        bytes32 signedMsg,
+        bytes32 _signedMsg,
         EscrowParams memory params,
         bytes memory _seller_sig,
         bytes memory _buyer_sig,
         bytes memory _lender_sig
     ) internal pure {
         (bytes32 r, bytes32 s, uint8 v) = _splitSignature(_seller_sig);
-        require(ecrecover(signedMsg, v, r, s) == params.seller, "Invalid seller signature");
+        require(ecrecover(_signedMsg, v, r, s) == params.seller, "Invalid seller signature");
         (r, s, v) = _splitSignature(_buyer_sig);
-        require(ecrecover(signedMsg, v, r, s) == params.buyer, "Invalid buyer signature");
+        require(ecrecover(_signedMsg, v, r, s) == params.buyer, "Invalid buyer signature");
         if (params.lender != address(0)) {
             (r, s, v) = _splitSignature(_lender_sig);
-            require(ecrecover(signedMsg, v, r, s) == params.lender, "Invalid lender signature");
+            require(ecrecover(_signedMsg, v, r, s) == params.lender, "Invalid lender signature");
         } else {
             require(_lender_sig.length == 0, "Lender signature should be empty");
         }
@@ -166,13 +166,13 @@ contract EscrowFactory {
     }
 
     function _splitSignature(
-        bytes memory sig
-    ) private pure returns (bytes32 r, bytes32 s, uint8 v) {
-        require(sig.length == 65, "invalid signature length");
+        bytes memory _sig
+    ) private pure returns (bytes32 _r, bytes32 _s, uint8 _v) {
+        require(_sig.length == 65, "invalid signature length");
         assembly {
-            r := mload(add(sig, 32))
-            s := mload(add(sig, 64))
-            v := byte(0, mload(add(sig, 96)))
+            _r := mload(add(_sig, 32))
+            _s := mload(add(_sig, 64))
+            _v := byte(0, mload(add(_sig, 96)))
         }
     }
 }
