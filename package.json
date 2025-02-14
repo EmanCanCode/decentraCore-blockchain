@@ -1,6 +1,10 @@
 {
   "name": "hardhat-project",
   "type": "commonjs",
+  "engines": {
+    "node": "18.20.4",
+    "npm": "10.7.0"
+  },
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^1.0.3",
     "@nomicfoundation/hardhat-ethers": "^3.0.5",
