@@ -118,7 +118,7 @@ contract ConstantProduct {
         // x is the token received's reserve before the swap
         // dy = what is going to be returned to the user
         // x * y = k, where k is the constant product of the reserves
-        uint amountReceivedWithFee = (_amountReceived * 997) / 1000;  // 0.3% fee applied
+        uint amountReceivedWithFee = (_amountReceived * 997) / 1000;  // 0.3% fee applied 
         _amountReturned = (reserveReturned * amountReceivedWithFee) / (reserveReceived + amountReceivedWithFee);
 
         // Transfer returned token to the sender, depending on which token was received

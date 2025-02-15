@@ -33,7 +33,7 @@ describe("ConstantProduct", () => {
             expect(await cpamm.tokenA()).to.equal(tokenA.address);
             expect(await cpamm.tokenB()).to.equal(tokenB.address);
         });
-        
+
         it("Sets the owner", async () => {
             expect(await cpamm.owner()).to.equal(owner.address);
         });
@@ -164,13 +164,78 @@ describe("ConstantProduct", () => {
 
     describe("Swap", () => {
         describe("Success", () => {
-            it("Swaps tokens with user", async () => {});
-            it("Updates reserves", async () => {});
-            it("Emits a Swapped event", async () => {});
+            let receipt: ContractReceipt;
+            const tokenReserveBeforeSwap = {
+                tokenA:"10000000000",
+                tokenB:"5000000000"
+            };
+            const swapAmount = "7000000";
+            beforeEach(async () => {
+                // approve tokenA and tokenB to cpamm
+                await tokenA.connect(owner).approve(
+                    cpamm.address, initialSupply
+                );
+                await tokenB.connect(owner).approve(
+                    cpamm.address, initialSupply
+                );
+                // add liquidity to the pool
+                await cpamm.connect(owner).addLiquidity(
+                    tokenReserveBeforeSwap.tokenA, // tokenA',
+                    tokenReserveBeforeSwap.tokenB, // 1 tokenB is worth 2 tokenA
+                );
+                const actor = signers[0];
+                // send some tokenA to the user
+                await tokenA.connect(owner).transfer(actor.address, swapAmount);
+                // ensure that the user has the tokenA and no tokenB
+                expect(await tokenA.balanceOf(actor.address)).to.equal(swapAmount);
+                expect(await tokenB.balanceOf(actor.address)).to.equal(0);
+                // approve cpamm to spend the user's tokenA
+                await tokenA.connect(actor).approve(cpamm.address, swapAmount);
+
+
+                // swap tokenA for tokenB
+                const tx = await cpamm.connect(actor).swap(tokenA.address, swapAmount);
+                receipt = await tx.wait();
+            });
+            it("Swaps tokens with user", async () => {
+                const actor = signers[0];
+                // todo: do the math (expected tokenA and tokenB balances) and assert
+                // check user has no tokenA
+                expect(await tokenA.balanceOf(actor.address)).to.equal(0);
+                // check user has tokenB
+                expect((await tokenB.balanceOf(actor.address)).gt(0)).to.be.true;
+            });
+            it("Updates reserves", async () => {
+                const actor = signers[0];
+                 // ensure that the reserves has 99.7% of the tokenA swapped (6979000) + tokenReserveBeforeSwap.tokenA
+                 expect(await cpamm.reserveA()).to.equal(
+                    BigNumber.from(tokenReserveBeforeSwap.tokenA).add(6979000)
+                );
+                // ensure that the reserves is tokenReserveBeforeSwap.tokenB - usersTokenB
+                expect(await cpamm.reserveB()).to.equal(
+                    BigNumber.from(tokenReserveBeforeSwap.tokenB).sub(await tokenB.balanceOf(actor.address))
+                );
+            });
+            it("Gives owner the fees from the swap", async () => {
+                // check that owner received fees (0.3% of swap or 21000) from actor swapping tokenA
+                // added liquidity, gave token A to actor, then got 0.3% of the swap amount
+                const expectedOwnerAmount = BigNumber.from(initialSupply).sub(tokenReserveBeforeSwap.tokenA).sub(swapAmount).add(21000);
+                expect(await tokenA.balanceOf(owner.address)).to.equal(expectedOwnerAmount);
+            });
+            it("Emits a Swapped event", async () => {
+                const actor = signers[0];
+                const events = receipt.events!;
+                const swappedEvent = events.find((event) => event.event === "Swapped")!;
+                const args = swappedEvent.args!;
+                expect(args.from).to.equal(actor.address);
+                expect(args.to).to.equal(tokenB.address);
+                expect(args.amountReceived).to.equal(swapAmount);
+                expect(args.amountReturned).to.equal(await tokenB.balanceOf(actor.address));
+            });
         });
         describe("Failure", () => { // i didnt test all the require statements in the contract for this fn because theyre on the return of ERC20 functions that are already tested (openzeppelin)
-            it("Reverts when token is not in pair", async () => {});
-            it("Reverts when amount to receive is 0", async () => {});
+            it("Reverts when token is not in pair", async () => { });
+            it("Reverts when amount to receive is 0", async () => { });
         });
     });
 });
