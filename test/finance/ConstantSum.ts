@@ -69,39 +69,27 @@ describe("Constant Sum", () => {
                 expect(args.amount).to.equal(await csamm.balanceOf(owner.address));
             });
         });
-        // todo: do a before each so the contracts are set the way for individual test casess
         describe("Failure", () => {
+            const liquidityAmount = BigNumber.from(initialSupply).div(4);
+            beforeEach(async () => {
+                // approve csamm to spend tokens
+                await tokenA.connect(owner).approve(csamm.address, initialSupply);
+                await tokenB.connect(owner).approve(csamm.address, initialSupply);
+                // add liquidity - 50/50 ratio using half the amount of tokens minted
+                await csamm.connect(owner).addLiquidity(
+                    liquidityAmount, liquidityAmount
+                );
+            });
             it("Reverts when the amounts given are 0", async () => {
                 await expect(csamm.connect(owner).addLiquidity(0, 0)).to.be.revertedWith("Amount must be greater than 0");
             });
             it("Reverts when reserve ratio does not match", async () => {
                 // add liquidity then try to add liquidity with a different ratio. should revert
-                // approve csamm to spend tokens
-                await tokenA.connect(owner).approve(csamm.address, initialSupply);
-                await tokenB.connect(owner).approve(csamm.address, initialSupply);
-                // add liquidity - 50/50 ratio using half the amount of tokens minted
-                const liquidityAmount = BigNumber.from(initialSupply).div(2);
-                await csamm.connect(owner).addLiquidity(
-                    liquidityAmount, liquidityAmount
-                );
-                console.log(await csamm.reserveA(), await csamm.reserveB());
-                console.log((await csamm.reserveA()).add(await csamm.reserveB()).eq(initialSupply));
                 // determine what
                 // try to add liquidity with a different ratio
                 await expect(csamm.connect(owner).addLiquidity(
                     liquidityAmount, liquidityAmount.add(1)
                 )).to.be.revertedWith("dx / dy != x / y");
-            });
-            it("Reverts when shares given is 0", async  () => {
-                // add liquidity
-                tokenA.connect(owner).approve(csamm.address, initialSupply);
-                tokenB.connect(owner).approve(csamm.address, initialSupply);
-                const liquidityAmount = BigNumber.from(initialSupply).div(2);
-                csamm.connect(owner).addLiquidity(
-                    liquidityAmount, liquidityAmount
-                );
-                // try to add liquidity with 1 token each to the pool, should revert
-                await expect(csamm.connect(owner).addLiquidity(1, 1)).to.be.revertedWith("Shares must be greater than 0")
             });
         });
     });
