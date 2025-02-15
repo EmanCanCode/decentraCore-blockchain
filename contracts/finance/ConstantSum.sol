@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.24;
+pragma solidity ^0.8.24;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 
@@ -145,6 +145,7 @@ contract ConstantSum {
         uint256 _amountA,
         uint256 _amountB
     ) external returns (uint _shares) {
+        require(_amountA > 0 && _amountB > 0, "Amount must be greater than 0");
         // get the assets from the sender
         tokenA.transferFrom(msg.sender, address(this), _amountA);
         tokenB.transferFrom(msg.sender, address(this), _amountB);
@@ -158,6 +159,7 @@ contract ConstantSum {
         }
 
         // calculate the amount of LP tokens to mint
+        // constant sum
         if (totalSupply == 0) {
             _shares = _sqrt(_amountA * _amountB); // or would i do _shares = _sqrt(_amountA * _amountB) - 1; ?
         } else {

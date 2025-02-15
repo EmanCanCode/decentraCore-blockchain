@@ -1,9 +1,9 @@
 import { expect } from "chai";
 import { ethers } from "hardhat"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { BigNumber, ContractReceipt } from "ethers";
 import { ConstantProduct, FungibleToken } from "../../typechain-types/contracts/finance";
 import { ConstantProduct__factory, FungibleToken__factory } from "../../typechain-types";
-import { BigNumber, ContractReceipt } from "ethers";
 
 
 describe("ConstantProduct", () => {
@@ -234,8 +234,16 @@ describe("ConstantProduct", () => {
             });
         });
         describe("Failure", () => { // i didnt test all the require statements in the contract for this fn because theyre on the return of ERC20 functions that are already tested (openzeppelin)
-            it("Reverts when token is not in pair", async () => { });
-            it("Reverts when amount to receive is 0", async () => { });
+            it("Reverts when token is not in pair", async () => {
+                // if address is not in the pair, it should revert
+                // dont have to add liquidity to test this
+                await expect(cpamm.connect(owner).swap(owner.address, '10000000000')).to.be.revertedWith("Token not in pair");
+            });
+            it("Reverts when amount to receive is 0", async () => { 
+                // if the amount to receive is 0, it should revert
+                // dont have to add liquidity to test this
+                await expect(cpamm.connect(owner).swap(tokenA.address, '0')).to.be.revertedWith("Amount must be greater than 0");
+            });
         });
     });
 });
