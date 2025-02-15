@@ -95,8 +95,52 @@ describe("Constant Sum", () => {
     });
 
     describe("Remove Liquidity", () => {
-        describe("Success", () => {});
-        describe("Failure", () => {});
+        describe("Success", () => {
+            let receipt: ContractReceipt;
+            let shares: BigNumber;
+            beforeEach(async () => {
+                // approve csamm to spend tokens
+                await tokenA.connect(owner).approve(csamm.address, initialSupply);
+                await tokenB.connect(owner).approve(csamm.address, initialSupply);
+                // add liquidity - 50/50 ratio using the same amount of tokens minted (makes it easy to test)
+                await csamm.connect(owner).addLiquidity(
+                    initialSupply, initialSupply
+                );
+                // assert the reserves are not 0
+                expect(await csamm.reserveA()).to.not.equal(0);
+                expect(await csamm.reserveB()).to.not.equal(0);
+                // assert that the liquidity provider has shares / LPT
+                shares = await csamm.balanceOf(owner.address);
+                expect(shares).to.not.equal(0);
+                // remove liquidity
+                const tx = await csamm.connect(owner).removeLiquidity(
+                    await csamm.balanceOf(owner.address)
+                );
+                receipt = await tx.wait();
+            });
+            it("Removes liquidity from the pool", async () => {
+                expect(await csamm.reserveA()).to.equal(0);
+                expect(await csamm.reserveB()).to.equal(0);
+            });
+            it("Updates user shares (LP Token)", async () => {
+                expect(await csamm.balanceOf(owner.address)).to.equal(0);
+            });
+            it("Emits RemovedLiquidity event", async () => {
+                const events = receipt.events!;
+                const liquidityEvent = events.find((event) => event.event === "RemovedLiquidity")!;
+                expect(liquidityEvent.event).to.equal("RemovedLiquidity");
+                const args = liquidityEvent.args!;
+                expect(args.from).to.equal(owner.address);
+                expect(args.amount).to.equal(shares);
+            });
+        });
+        describe("Failure", () => {
+            it("Reverts when the shares param is 0", async () => {
+                await expect(
+                    csamm.connect(owner).removeLiquidity(0)
+                ).to.be.revertedWith("Shares must be greater than 0");
+            });
+        });
     });
 
     describe("Swap", () => {

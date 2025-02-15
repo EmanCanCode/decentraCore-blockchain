@@ -185,6 +185,7 @@ contract ConstantSum {
     /// @return _amountA The amount of tokenA that was returned
     /// @return _amountB The amount of tokenB that was returned
     function removeLiquidity(uint _shares) external returns (uint _amountA, uint _amountB) {
+        require(_shares > 0, "Shares must be greater than 0");
         uint256 balA = tokenA.balanceOf(address(this));
         uint256 bal1 = tokenB.balanceOf(address(this));
 
