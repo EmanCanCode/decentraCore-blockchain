@@ -7,7 +7,8 @@
   },
   "scripts": {
     "test-cpamm": "npx hardhat test test/finance/ConstantProduct.ts",
-    "test-csamm": "npx hardhat test test/finance/ConstantSum.ts"
+    "test-csamm": "npx hardhat test test/finance/ConstantSum.ts",
+    "test-obmm": "npx hardhat test test/finance/OrderBook.ts"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^1.0.3",

@@ -1,16 +1,16 @@
 import { expect } from "chai";
 import { ethers } from "hardhat"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { BigNumber, ContractReceipt, Signer } from 'ethers';
+import { BigNumber, ContractReceipt } from 'ethers';
 import { FungibleToken } from '../../typechain-types/contracts/finance/FungibleToken';
-import { ConstantSum } from "../../typechain-types";
+import { OrderBook } from "../../typechain-types";
 
 describe("Constant Sum", () => {
     let owner: SignerWithAddress;
     let signers: SignerWithAddress[];
     let tokenA: FungibleToken;
     let tokenB: FungibleToken;
-    let csamm: ConstantSum;
+    let obmm: OrderBook;
     const initialSupply: string = "10000000000000000000000000000000";
     beforeEach(async () => {
         // get signers
@@ -20,40 +20,65 @@ describe("Constant Sum", () => {
         tokenA = await TokenA.deploy("Token A", "TKA", initialSupply);
         const TokenB = await ethers.getContractFactory("FungibleToken");
         tokenB = await TokenB.deploy("Token B", "TKB", initialSupply);
-        // deploy constant sum AMM
-        const CSAMM = await ethers.getContractFactory("ConstantSum");
-        csamm = await CSAMM.deploy(tokenA.address, tokenB.address);
+        // deploy order book
+        const OBMM = await ethers.getContractFactory("OrderBook");
+        obmm = await OBMM.deploy(owner.address, 1); // fee account is owner, fee is 1%
     });
 
     describe("Deployment", () => {
-        it("Sets the token contracts", async () => {
-            expect(await csamm.tokenA()).to.equal(tokenA.address);
-            expect(await csamm.tokenB()).to.equal(tokenB.address);
+        it("Sets the fee account", async () => {
+           expect(await obmm.feeAccount()).to.equal(owner.address);
         });
-        it("Sets the owner", async () => {
-            expect(await csamm.owner()).to.equal(owner.address);
+        it("Sets the fee percent", async () => {
+            expect(await obmm.feePercent()).to.equal(1);
         });
     });
 
-    describe("Add Liquidity", () => {
+    describe("Deposit Ether", () => {
         describe("Success", () => {
             beforeEach(async () => {});
-            it("Add liquidity to the pool", async () => {});
-            it("Mint shares (LP Token) to the sender and updates reserves", async () => {});
-            it("Emits a AddedLiquidity event", async () => {});
+            it("", async () => {});
+            it("", async () => {});
+            it("", async () => {});
         });
         describe("Failure", () => {
-            it("Reverts when reserve ratio does not match", () => {});
-            it("Reverts when shares given is 0", () => {});
+            it("Reverts when ", () => {});
+            it("Reverts when ", () => {});
         });
     });
 
-    describe("Remove Liquidity", () => {
+    describe("Deposit Token", () => {
+        describe("Success", () => {
+            beforeEach(async () => {});
+            it("", async () => {});
+            it("", async () => {});
+            it("", async () => {});
+        });
+        describe("Failure", () => {
+            it("Reverts when ", () => {});
+            it("Reverts when ", () => {});
+        });
+    });
+
+    describe("Withdraw Ether", () => {
         describe("Success", () => {});
         describe("Failure", () => {});
     });
 
-    describe("Swap", () => {
+    describe("Withdraw Token", () => {
+        describe("Success", () => {});
+        describe("Failure", () => {});
+    });
+
+    describe("Make Order", () => {
+        describe("Success", () => {});
+        describe("Failure", () => {});
+    });
+    describe("Cancel Order", () => {
+        describe("Success", () => {});
+        describe("Failure", () => {});
+    });
+    describe("Fill Order", () => {
         describe("Success", () => {});
         describe("Failure", () => {});
     });

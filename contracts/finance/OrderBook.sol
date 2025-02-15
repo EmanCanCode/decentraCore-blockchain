@@ -71,7 +71,6 @@ contract OrderBook {
     }
 
     constructor(address _feeAccount, uint256 _feePercent) {
-        // State vs Local variable problem sovled here...
         feeAccount = _feeAccount;
         feePercent = _feePercent;
     }
