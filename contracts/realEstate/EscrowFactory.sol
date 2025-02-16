@@ -44,17 +44,24 @@ contract EscrowFactory {
         bytes memory _lender_sig // must be empty if _params.lender == address(0)
     ) public returns (bytes32 escrowId) {
         // Get the nonce value that should be used (without updating state yet)
-        uint currentNonce = nonce[_params.buyer][_params.lender] + 1;
+        uint currentNonce = nonce[_params.buyer][_params.seller] + 1;
+        // Compute escrowId using key parameters (including nonce)
+        escrowId = _computeEscrowId(_params, currentNonce);
+        // make sure escrowId is not already verified
+        require(!verifiedEscrowIds[escrowId], "Escrow parameters already verified");
         // Compute the message hash for signing using our struct and nonce
         bytes32 messageHash = _computeMessageHash(_params, currentNonce);
         // Apply the Ethereum Signed Message prefix (EIP-191)
         bytes32 signedMsg = _computeSignedMessage(messageHash);
         // Verify signatures
         _verifySignatures(signedMsg, _params, _seller_sig, _buyer_sig, _lender_sig);
-        // Compute escrowId using key parameters (including nonce)
-        escrowId = _computeEscrowId(_params, currentNonce);
         verifiedEscrowIds[escrowId] = true;
         emit EscrowVerified(escrowId, _params.buyer, _params.seller, currentNonce);
+    }
+
+    receive() external payable {}
+    fallback() external payable {
+        revert("Invalid function call");
     }
 
     /// @notice Creates the escrow contract from verified parameters.
@@ -68,7 +75,7 @@ contract EscrowFactory {
         bytes32 computedEscrowId = _computeEscrowId(_params, currentNonce);
         require(_escrowId == computedEscrowId, "Escrow ID mismatch");
         // Update nonce and clear the verification flag
-        nonce[_params.buyer][_params.lender] = currentNonce;
+        nonce[_params.buyer][_params.seller] = currentNonce;
         verifiedEscrowIds[_escrowId] = false;
 
         // Deploy new Escrow contract

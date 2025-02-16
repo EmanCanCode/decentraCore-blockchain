@@ -11,7 +11,6 @@ contract RealEstate is ERC1155 {
 
     constructor() ERC1155("") {
         owner = msg.sender;
-        // mint 1 million tokens to the contract creator
         _mint(msg.sender, 1, 1, "");
     }
 

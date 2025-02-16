@@ -1,0 +1,190 @@
+import { BigNumber, ContractReceipt } from 'ethers';
+import { ethers } from 'hardhat';
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { expect } from 'chai';
+import { EscrowFactory } from '../../typechain-types';
+
+describe('EscrowFactory', () => {
+    let owner: SignerWithAddress;
+    let escrowFactory: EscrowFactory;
+    beforeEach(async () => {
+        [owner] = await ethers.getSigners();
+        const EscrowFactory = await ethers.getContractFactory('EscrowFactory', owner);
+        escrowFactory = await EscrowFactory.deploy();
+        await escrowFactory.deployed();
+    });
+
+    describe("Deployment", () => {
+        it("Should set the right owner", async () => {
+            expect(await escrowFactory.owner()).to.equal(owner.address);
+        }); 
+    });
+
+    describe("Verify Escrow Data", () => {
+        let nft_address: string;
+        const nft_id = 1;
+        const nft_count = 1;
+        const purchase_price = ethers.utils.parseEther("500");
+        const earnest_amount = purchase_price.div(100); // 1%
+        let seller: SignerWithAddress;
+        let buyer: SignerWithAddress;
+        let inspector: SignerWithAddress;
+        let lender: SignerWithAddress;
+        let appraiser: SignerWithAddress;
+        let escrowParams: EscrowParams;
+        let signatures: {
+            seller: string;
+            buyer: string;
+            lender: string;
+        };
+        beforeEach(async () => {
+            [owner, seller, buyer, inspector, lender, appraiser] = await ethers.getSigners();
+            // deploy real estate NFT, mints in constructor
+            const RealEstate = await ethers.getContractFactory('RealEstate', seller);
+            const realEstate = await RealEstate.deploy();
+            await realEstate.deployed();
+            // create function params
+            escrowParams = {
+                nft_address: realEstate.address,
+                nft_id,
+                nft_count,
+                purchase_price,
+                earnest_amount,
+                seller: seller.address,
+                buyer: buyer.address,
+                inspector: inspector.address,
+                lender: lender.address,
+                appraiser: appraiser.address,
+            };
+            // create signed message
+            let messageHash = ethers.utils.solidityPack(
+                [
+                    'address', 
+                    'uint256', 
+                    'uint8', 
+                    'uint256', 
+                    'uint256', 
+                    'address', 
+                    'address', 
+                    'address', 
+                    'address', 
+                    'address',
+                    'uint256'  // nonce
+                ],
+                [
+                    escrowParams.nft_address,
+                    escrowParams.nft_id,
+                    escrowParams.nft_count,
+                    escrowParams.purchase_price,
+                    escrowParams.earnest_amount,
+                    escrowParams.seller,
+                    escrowParams.buyer,
+                    escrowParams.inspector,
+                    escrowParams.lender,
+                    escrowParams.appraiser,
+                    1  // nonce
+                ]
+            );
+            messageHash = ethers.utils.solidityKeccak256(['bytes'], [messageHash]);
+            // seller signs message
+            // buyer signs message
+            // lender signs message
+            signatures = {
+                seller: await seller.signMessage(ethers.utils.arrayify(messageHash)),
+                buyer: await buyer.signMessage(ethers.utils.arrayify(messageHash)),
+                lender: await lender.signMessage(ethers.utils.arrayify(messageHash)),
+            }
+            
+        });
+        describe("Success", () => {
+            let receipt: ContractReceipt;
+            beforeEach(async () => {
+                const tx = await escrowFactory.verifyEscrowData(
+                    escrowParams,
+                    signatures.seller,
+                    signatures.buyer,
+                    signatures.lender
+                );
+                receipt = await tx.wait();
+            });
+            it("Stores verified escrow id", async () => {
+                const escrowId = (() => {
+                    const escrowId = receipt.events?.find(e => e.event === "EscrowVerified")?.args?.escrowId;
+                    if (!escrowId) throw new Error("EscrowVerified event not emitted");
+                    return escrowId;
+                })();
+                const verifiedEscrowId = await escrowFactory.verifiedEscrowIds(escrowId);
+                expect(verifiedEscrowId).to.be.true;
+            });
+            it("Emits EscrowVerified event", async () => {
+                const event = receipt.events?.find(e => e.event === "EscrowVerified")!;
+                expect(event.event!).to.equal("EscrowVerified");
+                const args = event.args!;
+                expect(args.escrowId).to.equal('0xf8a73d23578aa519da7bd167f7733a86efbd40c05701a997d0c9b71472bd7a75');
+                expect(args.buyer).to.equal(buyer.address); 
+                expect(args.seller).to.equal(seller.address);
+                expect(args.nonce).to.equal(1);
+            });
+        });
+        describe("Failure", () => {
+            // todo it("Reverts when parameters already verified", async () => {}); 
+            it("Reverts when invalid seller signature", async () => {
+                await expect(escrowFactory.verifyEscrowData(
+                    escrowParams,
+                    signatures.buyer,  // should be seller. should fail
+                    signatures.buyer,
+                    signatures.lender
+                )).to.be.revertedWith("Invalid seller signature");
+            });
+            it("Reverts when invalid buyer signature", async () => {
+                await expect(escrowFactory.verifyEscrowData(
+                    escrowParams,
+                    signatures.seller,
+                    signatures.seller,  // should be buyer. should fail
+                    signatures.lender
+                )).to.be.revertedWith("Invalid buyer signature");
+            });
+            it("Reverts when invalid lender signature, if financed", async () => {
+                await expect(escrowFactory.verifyEscrowData(
+                    escrowParams,
+                    signatures.seller,
+                    signatures.buyer,
+                    signatures.buyer  // should be lender. should fail
+                )).to.be.revertedWith("Invalid lender signature");
+
+            });
+            // todo it("Reverts when lender signature not empty, if not financed", async () => {});
+        });
+    });
+
+    describe("", () => {
+        describe("Success", () => {
+            it("", async () => {});
+        });
+        describe("Failure", () => {
+            it("", async () => {});
+        });
+    });
+
+    describe("", () => {
+        describe("Success", () => {
+            it("", async () => {});
+        });
+        describe("Failure", () => {
+            it("", async () => {});
+        });
+    });
+});
+
+interface EscrowParams {
+    nft_address: string;
+    nft_id: number;
+    nft_count: number;
+    purchase_price: BigNumber;
+    earnest_amount: BigNumber;
+    seller: string; // address
+    buyer: string; // address
+    inspector: string; // address
+    lender: string; // address
+    appraiser: string; // address
+}
