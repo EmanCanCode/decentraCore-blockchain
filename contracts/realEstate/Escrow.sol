@@ -55,7 +55,7 @@ contract Escrow is IERC1155Receiver {
     event Approval(address indexed _from);
     event Cancelled(address indexed _from);
     event ActivatedSale(address indexed _from);
-    event Completed(address indexed _from);
+    event Completed(address indexed _from, address indexed _new_nft_owner);
     event SetFinanceContract(address indexed finance_contract);
 
     modifier reentrancyGuard() {
@@ -133,6 +133,7 @@ contract Escrow is IERC1155Receiver {
         if (deposit_balance[buyer] > 0) {
             // transfer buyer's earnest back to buyer from the contract
             buyer.transfer(deposit_balance[buyer]);
+            deposit_balance[buyer] = 0;
         }
         // send the nft back to the seller
         IERC1155(nft_address).safeTransferFrom(
@@ -162,9 +163,8 @@ contract Escrow is IERC1155Receiver {
     function finalizeSale() public reentrancyGuard onlyAuthorized correctState(State.Active) {
         // if financed, ensure the lender has deposited the purchase price minus earnest
         if (lender != address(0)) {
-            uint256 lenderRequired = purchase_price - earnest_amount;
             require(
-                deposit_balance[lender] >= lenderRequired,
+                deposit_balance[lender] >= purchase_price - earnest_amount,
                 "Lender deposit insufficient"
             );
         } else {
@@ -207,7 +207,7 @@ contract Escrow is IERC1155Receiver {
             );
         }
 
-        emit Completed(msg.sender);
+        emit Completed(msg.sender, lender == address(0) ? buyer : finance_contract);
     }
 
     // internal
@@ -225,7 +225,7 @@ contract Escrow is IERC1155Receiver {
     function setFinanceContract(
         address _finance_contract
     ) public {
-        require(msg.sender == factory, "Only factory can set finance contract");
+        require(msg.sender == lender, "Only lender can set finance contract");
         finance_contract = _finance_contract;
         emit SetFinanceContract(_finance_contract);
     }
