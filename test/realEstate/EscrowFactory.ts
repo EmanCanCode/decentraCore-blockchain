@@ -21,7 +21,6 @@ describe('EscrowFactory', () => {
     });
 
     describe("Verify Escrow Data", () => {
-        let nft_address: string;
         const nft_id = 1;
         const nft_count = 1;
         const purchase_price = ethers.utils.parseEther("500");
@@ -127,7 +126,22 @@ describe('EscrowFactory', () => {
             });
         });
         describe("Failure", () => {
-            // todo it("Reverts when parameters already verified", async () => {}); 
+            it("Reverts when parameters already verified", async () => {
+                // verify escrow data
+                await escrowFactory.connect(seller).verifyEscrowData(
+                    escrowParams,
+                    signatures.seller,
+                    signatures.buyer,
+                    signatures.lender
+                );
+                // verify same escrow data again, should fail
+                await expect(escrowFactory.connect(seller).verifyEscrowData(
+                    escrowParams,
+                    signatures.seller,
+                    signatures.buyer,
+                    signatures.lender
+                )).to.be.revertedWith("Escrow parameters already verified");
+            }); 
             it("Reverts when invalid seller signature", async () => {
                 await expect(escrowFactory.verifyEscrowData(
                     escrowParams,
@@ -153,25 +167,88 @@ describe('EscrowFactory', () => {
                 )).to.be.revertedWith("Invalid lender signature");
 
             });
-            // todo it("Reverts when lender signature not empty, if not financed", async () => {});
+            it("Reverts when lender signature not empty, if not financed", async () => {
+                // recreate signed data
+                escrowParams.lender = ethers.constants.AddressZero;  // no lender, not financed
+                // create signed message
+                let messageHash = ethers.utils.solidityPack(
+                    [
+                        'address', 
+                        'uint256', 
+                        'uint8', 
+                        'uint256', 
+                        'uint256', 
+                        'address', 
+                        'address', 
+                        'address', 
+                        'address', 
+                        'address',
+                        'uint256'  // nonce
+                    ],
+                    [
+                        escrowParams.nft_address,
+                        escrowParams.nft_id,
+                        escrowParams.nft_count,
+                        escrowParams.purchase_price,
+                        escrowParams.earnest_amount,
+                        escrowParams.seller,
+                        escrowParams.buyer,
+                        escrowParams.inspector,
+                        escrowParams.lender,
+                        escrowParams.appraiser,
+                        1  // nonce
+                    ]
+                );
+                messageHash = ethers.utils.solidityKeccak256(['bytes'], [messageHash]);
+                // seller signs message
+                signatures.seller = await seller.signMessage(ethers.utils.arrayify(messageHash));
+                // buyer signs message
+                signatures.buyer = await buyer.signMessage(ethers.utils.arrayify(messageHash));
+                await expect(escrowFactory.connect(seller).verifyEscrowData(
+                    escrowParams,  // has address zero for lender
+                    signatures.seller,
+                    signatures.buyer,
+                    signatures.buyer  // non-empty lender signature. should fail
+                )).to.be.revertedWith("Lender signature should be empty");
+            });
         });
     });
 
-    describe("", () => {
+    describe("Withdraw", () => {
         describe("Success", () => {
-            it("", async () => {});
+            it("Withdraws contract's ether balance to owner", async () => {
+                // get owner's initial balance
+                const ownerInitialBalance = await owner.getBalance();
+                // send some ether to contract
+                const actor = (await ethers.getSigners())[1];
+                await actor.sendTransaction({ to: escrowFactory.address, value: ethers.utils.parseEther("1") });
+                // withdraw ether to owner
+                await escrowFactory.connect(owner).withdraw();
+                // get owner's final balance
+                const ownerFinalBalance = await owner.getBalance();
+                // check owner's balance increased. (owner loses gas fees)
+                expect(ownerFinalBalance).to.be.gt(ownerInitialBalance);
+            });
         });
         describe("Failure", () => {
-            it("", async () => {});
+            it("Reverts when non-owner actor calls", async () => {
+                const nonOwner = (await ethers.getSigners())[1];
+                await expect(escrowFactory.connect(nonOwner).withdraw()).to.be.revertedWith("Only owner can withdraw");
+            });
         });
     });
 
-    describe("", () => {
+    describe("Create Escrow From Verified", () => {
         describe("Success", () => {
-            it("", async () => {});
+            it("Updates nonce", async () => {});
+            it("Clears verification flag (makes contract lighter, use events to track history off-chain)", async () => {});
+            it("Deploys escrow contract", async () => {});
+            it("Stores escrow address by escrow ID", async () => {});
+            it("Emits Escrow Created event", async () => {});
         });
         describe("Failure", () => {
-            it("", async () => {});
+            it("Reverts when escrow parameters are not verified", async () => {});
+            it("Reverts when given and calculated escrow ID mismatch", async () => {});
         });
     });
 });

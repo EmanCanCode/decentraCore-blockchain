@@ -59,7 +59,9 @@ contract EscrowFactory {
         emit EscrowVerified(escrowId, _params.buyer, _params.seller, currentNonce);
     }
 
+    // accept ether to this contract
     receive() external payable {}
+    
     fallback() external payable {
         revert("Invalid function call");
     }
@@ -105,6 +107,7 @@ contract EscrowFactory {
 
         emit EscrowCreated(_escrowAddress, _escrowId, _params.buyer, _params.seller, currentNonce);
     }
+
 
     // --- Helper functions ---
 
