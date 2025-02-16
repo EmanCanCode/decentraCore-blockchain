@@ -55,6 +55,8 @@ contract Escrow is IERC1155Receiver {
     event Approval(address indexed _from, bool _value);
     event Cancelled(address indexed _from);
     event ActivatedSale(address indexed _from);
+    event Completed(address indexed _from);
+    event SetFinanceContract(address indexed finance_contract);
 
     modifier reentrancyGuard() {
         require(!locked, "Reentrancy guard");
@@ -93,11 +95,6 @@ contract Escrow is IERC1155Receiver {
     // buyer deposits earnest - before any other party can approve the sale
     // buyer's 'approval' is implicit, as the deposit_balance is updated only when the buyer deposits earnest
     function depositEarnest() public payable correctState(State.Created) {
-        // ensure the seller has approved this contract for transferring the nft
-        require(
-            IERC1155(nft_address).isApprovedForAll(seller, address(this)),
-            "Seller has not approved this contract"
-        );
         // only buyer deposits earnest
         require(msg.sender == buyer, "Only buyer can deposit earnest");
         // buyer must deposit the earnest amount
@@ -150,7 +147,7 @@ contract Escrow is IERC1155Receiver {
     }
 
     // activate sale
-    function activeSale() public onlyAuthorized correctState(State.Created) {
+    function activateSale() public onlyAuthorized correctState(State.Created) {
         // ensure that all parties approved
         require(_checkApprovals(), "Not all parties approved");
         // set state to 'Active'
@@ -210,7 +207,7 @@ contract Escrow is IERC1155Receiver {
             );
         }
 
-
+        emit Completed(msg.sender);
     }
 
     // internal
@@ -224,12 +221,13 @@ contract Escrow is IERC1155Receiver {
             (lender == address(0) || approval[lender]));
     }
 
-    // set lending contract
-    function setLendingContract(
+    // set finance contract
+    function setFinanceContract(
         address _finance_contract
     ) public {
-        require(msg.sender == factory, "Only factory can set lending contract");
+        require(msg.sender == factory, "Only factory can set finance contract");
         finance_contract = _finance_contract;
+        emit SetFinanceContract(_finance_contract);
     }
 
     function onERC1155Received(

@@ -5,6 +5,7 @@ import { Escrow } from "../../typechain-types";
 import { RealEstate } from '../../typechain-types/contracts/realEstate/RealEstate';
 import { BigNumber } from "ethers";
 
+// this is gonna be a long test file... but it's important to test all the edge cases
 
 describe("Escrow", () => {
     let owner: SignerWithAddress;
@@ -27,9 +28,9 @@ describe("Escrow", () => {
         ] = await ethers.getSigners();
         // all the same since they just approve the sale. no further contract interaction from them
         lender = appraiser = inspector; 
-        // deploy real estate (nft erc1155) contract
+        // seller to deploy real estate (nft erc1155) contract 
         const RealEstate = await ethers.getContractFactory("RealEstate");
-        realEstate = await RealEstate.deploy();
+        realEstate = await RealEstate.connect(seller).deploy();
         await realEstate.deployed();
         // deploy escrow contract
         const Escrow = await ethers.getContractFactory("Escrow");
@@ -46,6 +47,11 @@ describe("Escrow", () => {
             lender.address, // lender
             appraiser.address, // appraiser
         );
+        await escrow.deployed();
+        // send the nft to the escrow contract
+        await realEstate.connect(seller).safeTransferFrom(seller.address, escrow.address, 1, 1, "0x00");
+        // assert that the nft is in the escrow contract
+        expect(await realEstate.balanceOf(escrow.address, 1)).to.equal(1);
     });
 
     describe("Deployment", () => {
@@ -63,6 +69,96 @@ describe("Escrow", () => {
             expect(await escrow.appraiser()).to.equal(appraiser.address);
             expect(await escrow.state()).to.equal(0);
             expect(inspector.address).to.equal(lender.address); // make sure they are the same
+        });
+    });
+
+    describe("Deposit Earnest", () => {
+        describe("Success", () => {
+            it("Stores deposit", async () => {});
+            it("Emits Deposit event", async () => {});
+        });
+        describe("Failure", () => {
+            it("Reverts when not the correct state when called", async () => {});
+            it("Reverts when other than buyer deposits earnest", async () => {});
+            it("Reverts when incorrect amount deposited for earnest", async () => {});
+            it("Reverts when earnest already deposited", async () => {});
+        });
+    });
+
+    describe("Deposit", () => {
+        describe("Success", () => {
+            it("Stores deposit", async () => {});
+            it("Emits Deposit Event", async () => {});
+        });
+        describe("Failure", () => {
+            it("Reverts when not the correct state when called", async () => {});
+            it("Reverts when not lender or buyer calls", async () => {});
+        });
+    });
+
+    describe("Approve Sale", () => {
+        describe("Success", () => {
+            it("Stores approval", async () => {});
+            it("Emits Approval event", async () => {});
+        });
+        describe("Failure", () => {
+            it("Reverts when unauthorized actors call", async () => {});
+            it("Reverts when not the correct state when called", async () => {});
+            it("Reverts when actor is buyer", async () => {});
+        });
+    });
+
+    describe("Cancel Sale", () => {
+        describe("Success", () => {
+            it("Stores cancelled state", async () => {});
+            it("Refunds buyer's earnest", async () => {});
+            it("Transfers real estate back to seller", async () => {});
+            it("Emits Cancelled event", async () => {});
+        });
+        describe("Failure", () => {
+            it("Reverts when unauthorized actors call", async () => {});
+            it("Reverts when not the correct state when called", async () => {});
+        });
+    });
+
+    describe("Activate Sale", () => {
+        describe("Success", () => {
+            it("Stores active state", async () => {});
+            it("Emits ActivatedSale event", async () => {});
+        });
+        describe("Failure", () => {
+            it("Reverts when unauthorized actors call", async () => {});
+            it("Reverts when not the correct state when called", async () => {});
+            it("Reverts when not all parties approve", async () => {});
+        });
+    });
+
+    describe("Finalize Sale", () => {
+        describe("Success", () => {
+            it("Updates Completed State", async () => {});
+            it("Sends factory fee", async () => {});
+            it("Sends seller proceeds", async () => {});
+            it("Transfers real estate to buyer, if not financed", async () => {});
+            it("Transfers real estate to finance contract, if financed", async () => {});
+            it("Emits Completed event", async () => {});
+        });
+        describe("Failure", () => {
+            it("Reverts when unauthorized actors call", async () => {});
+            it("Reverts when not the correct state when called", async () => {});
+            it("Reverts when lender's total deposit, if financed, is insufficient", async () => {});
+            it("Reverts when buyer's total deposit, if not financed, is insufficient", async () => {});
+            it("Reverts when buyer's total deposit, if not financed, is insufficient", async () => {});
+            it("Reverts when finance contract is not set, if financed", async () => {});
+        });
+    });
+
+    describe("Set Finance Contract", () => {
+        describe("Success", () => {
+            it("Sets finance contract", async () => {});
+            it("Emits SetFinanceContract event", async () => {});
+        });
+        describe("Failure", () => {
+            it("Reverts when non-factory actor calls", async () => {});
         });
     });
 });
