@@ -9,8 +9,10 @@ contract RealEstate is ERC1155 {
     // mapping from token ID to custom URI
     mapping(uint256 => string) private _tokenURIs;
 
-    constructor(address initialOwner) ERC1155("") {
-        owner = initialOwner;
+    constructor() ERC1155("") {
+        owner = msg.sender;
+        // mint 1 million tokens to the contract creator
+        _mint(msg.sender, 1, 1, "");
     }
 
     modifier onlyOwner() {
