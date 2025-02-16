@@ -240,17 +240,52 @@ describe("Order Book", () => {
             const block = await ethers.provider.getBlock(receipt.blockNumber!);
             expect(args.timestamp).to.equal(block.timestamp);
         });
-
     });
+
     describe("Cancel Order", () => {
-        describe("Success", () => {});
+        let receipt: ContractReceipt;
+        beforeEach(async () => {
+            // deposit token
+            await tokenA.approve(obmm.address, ethers.utils.parseEther("1"));
+            await obmm.depositToken(tokenA.address, ethers.utils.parseEther("1"));
+            // make order
+            await obmm.makeOrder(tokenA.address, ethers.utils.parseEther("1"), ethers.constants.AddressZero, ethers.utils.parseEther("1"));
+            // assert there is an order for order count 1
+            const order = await obmm.orders(1);
+            expect(order.id).to.equal(1);
+            expect(order.user).to.equal(owner.address);
+            // cancel order
+            const tx = await obmm.cancelOrder(1);
+            receipt = await tx.wait();
+        });
+        describe("Success", () => {
+            it("Tracks cancelled order", async () => {
+                expect(await obmm.orderCancelled(1)).to.be.true;
+            });
+            it("Emits Cancel event", async () => {
+                const events = receipt.events!;
+                const event = events.filter((event) => event.event === "Cancel")[0];
+                expect(event.event!).to.equal("Cancel");
+                const args = event.args!;
+                expect(args.id).to.equal(1);
+                expect(args.user).to.equal(owner.address);
+                expect(args.tokenGet).to.equal(tokenA.address);
+                expect(args.amountGet).to.equal(ethers.utils.parseEther("1"));
+                expect(args.tokenGive).to.equal(ethers.constants.AddressZero);
+                expect(args.amountGive).to.equal(ethers.utils.parseEther("1"));
+                const block = await ethers.provider.getBlock(receipt.blockNumber!);
+                expect(args.timestamp).to.equal(block.timestamp);
+            });
+        });
         describe("Failure", () => {
-            it("Reverts when it is not actor's order", async () => {});
+            it("Reverts when it is not actor's order", async () => {
+            });
             it("Reverts when order does not exist", async () => {});
             it("Reverts when order is already filled", async () => {});
             it("Reverts when the order is already cancelled", async () => {});
         });
     });
+
     describe("Fill Order", () => {
         describe("Success", () => {});
         describe("Failure", () => {});
