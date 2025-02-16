@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-// todo keep in mind we have the automated process contract to be built... will need to call some of those contract functions from here on certain events (e.g. transferring / updated below reorder threshold)
 contract InventoryManagement {
     address public owner;
     uint256 public nextItemId;
+    address public automatedProcess; // automatedProcess contract address
 
     // represents an inventory item.
     struct Item {
@@ -35,7 +35,8 @@ contract InventoryManagement {
     event ItemRegistered(uint256 indexed itemId, string name, string description, uint256 reorderThreshold);
     event StockUpdated(uint256 indexed itemId, uint256 newQuantity, MovementType movementType, uint256 timestamp, string note);
     event ItemTransferred(uint256 indexed itemId, uint256 quantity, string fromLocation, string toLocation, uint256 timestamp, string note);
-
+    event ItemDeleted(uint256 indexed itemId);
+    event SetAutomatedProcess(address automatedProcess);
     modifier onlyOwner() {
         require(msg.sender == owner, "Only owner can call this function");
         _;
@@ -49,6 +50,11 @@ contract InventoryManagement {
     constructor() {
         owner = msg.sender;
         nextItemId = 1;
+    }
+
+    function setAutomatedProcess(address _automatedProcess) public onlyOwner {
+        automatedProcess = _automatedProcess;
+        emit SetAutomatedProcess(_automatedProcess);
     }
     
     // register 
@@ -75,7 +81,15 @@ contract InventoryManagement {
         MovementType _movementType,
         string memory _location,
         string memory _note
-    ) public onlyOwner onlyRegisteredItem(_itemId) {        
+    ) public onlyRegisteredItem(_itemId) { 
+        if (msg.sender != owner) {  // if not owner, then only automated process can call this function
+            require(automatedProcess != address(0), "Automated process not set");
+            require(
+                msg.sender == automatedProcess,
+                "Only the automated process can call this function"
+            );
+        }
+          
         if (_movementType == MovementType.Inbound) {
             items[_itemId].quantity += _quantity;
         } else if (_movementType == MovementType.Outbound) {
@@ -127,6 +141,7 @@ contract InventoryManagement {
     // delete item
     function deleteItem(uint256 _itemId) public onlyOwner onlyRegisteredItem(_itemId) {
         delete items[_itemId];
+        emit ItemDeleted(_itemId);
     }
     
     function getTransactionHistory(uint256 _itemId) public view returns (InventoryTransaction[] memory) {
