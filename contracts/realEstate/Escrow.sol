@@ -52,7 +52,7 @@ contract Escrow is IERC1155Receiver {
     }
 
     event Deposit(address indexed _from, uint256 _value);
-    event Approval(address indexed _from, bool _value);
+    event Approval(address indexed _from);
     event Cancelled(address indexed _from);
     event ActivatedSale(address indexed _from);
     event Completed(address indexed _from);
@@ -118,11 +118,11 @@ contract Escrow is IERC1155Receiver {
 
     // approve sale
     function approveSale() public onlyAuthorized correctState(State.Created) {
-        require(msg.sender != buyer, "use depositEarnest() to deposit earnest");
+        require(msg.sender != buyer, "use depositEarnest() to approve sale");
         // approval status is updated
         approval[msg.sender] = true;
 
-        emit Approval(msg.sender, true);
+        emit Approval(msg.sender);
     }
 
     // cancel sale
