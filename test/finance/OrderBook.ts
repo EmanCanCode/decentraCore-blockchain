@@ -378,7 +378,9 @@ describe("Order Book", () => {
                 expect(await obmm.tokens(tokenA.address, actor2.address)).to.equal(ethers.utils.parseEther('1'));  // filled 1 token
                 // the tokens(ether, actor2) should return 4 - (1 + 0.01) (fee)
                 expect(await obmm.tokens(ethers.constants.AddressZero, actor2.address)).to.equal(ethers.utils.parseEther('3.99')); // 1 percent fee is 0.01 ether
-                // fee account should have 0.01 ether
+            });
+            it("Gave fee to fee account", async () => {
+                // fee account should have 0.01 ether from 1 ether trade
                 expect(await obmm.tokens(ethers.constants.AddressZero, owner.address)).to.equal(ethers.utils.parseEther('0.01'));
             });
             it("Tracks filled order", async () => {

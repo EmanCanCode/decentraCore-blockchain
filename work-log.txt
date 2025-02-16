@@ -18,13 +18,6 @@ Real Estate:
 NFTs for houses (1155) ✅
 escrow ✅
 
-Real Estate.escrow:
-deposit ✅
-deposit earnest ✅
-approve sale ✅
-cancel sale ✅
-finalize sale ✅
-
 
 
 ___TESTING__STATUS___
@@ -32,6 +25,34 @@ Finance:
 CPAMM ❌
 CSAMM ❌
 ORDER BOOK ❌
+Lend / Borrow possibly??
+Yield farms possibly??
+
+
+Supply Chain:
+automated process ❌
+product provinence ❌
+inventory management❌
+
+Real Estate:
+NFTs for houses (1155) ❌
+escrow ❌
+
+Real Estate.escrow:
+deposit ❌
+deposit earnest ❌
+approve sale ❌
+cancel sale ❌
+finalize sale ❌
+
+
+
+----------     done on 2/15/2025 @ 11:05PM     ----------
+___TESTING__STATUS___
+Finance:
+CPAMM ✅
+CSAMM ✅
+ORDER BOOK ✅
 Lend / Borrow possibly??
 Yield farms possibly??
 

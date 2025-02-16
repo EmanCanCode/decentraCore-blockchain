@@ -144,7 +144,84 @@ describe("Constant Sum", () => {
     });
 
     describe("Swap", () => {
-        describe("Success", () => {});
-        describe("Failure", () => {});
+        
+        describe("Success", () => {
+            let receipt: ContractReceipt;
+            let actor: SignerWithAddress;
+            let liquidityAmount: BigNumber;
+            beforeEach(async () => {
+                // approve csamm to spend tokens
+                await tokenA.connect(owner).approve(csamm.address, initialSupply);
+                await tokenB.connect(owner).approve(csamm.address, initialSupply);
+                // add liquidity - 50/50 ratio 
+                liquidityAmount = BigNumber.from(initialSupply).div(4);
+                await csamm.connect(owner).addLiquidity(
+                    liquidityAmount, liquidityAmount
+                );
+                // create another account to swap with
+                actor = (await ethers.getSigners())[1];
+                // send actor some tokens to swap with
+                await tokenA.connect(owner).transfer(actor.address, liquidityAmount);
+                // approve csamm to spend tokens
+                await tokenA.connect(actor).approve(csamm.address, liquidityAmount);
+                // assert the reserves are at liquidity amount
+                expect(await csamm.reserveA()).to.equal(liquidityAmount);
+                expect(await csamm.reserveB()).to.equal(liquidityAmount);
+                // assert that account does not have token B
+                expect(await tokenB.balanceOf(actor.address)).to.equal(0);
+                // assert owner has half the supply of token A (liquidityAmount is a quarter of the supply. gave qtr for liquidity and qtr for actor)
+                expect(await tokenA.balanceOf(owner.address)).to.equal(BigNumber.from(initialSupply).div(2));
+                // swap tokens
+                const tx = await csamm.connect(actor).swap(
+                    tokenA.address, liquidityAmount.div(10)
+                );
+                receipt = await tx.wait();
+            });
+            it("Swaps token A for token B", async () => {
+                expect(await tokenB.balanceOf(actor.address)).to.not.equal(0);
+                expect(await tokenA.balanceOf(actor.address)).to.equal(liquidityAmount.sub(liquidityAmount.div(10)));
+            });
+            it("Gives owner the fees from the swap", async () => { // asserted the owner balance in the before each
+                // if liquidityAmount is a quarter of the supply, and i swapped a tenth of that, the fee should be 0.3% of that
+                const fee = liquidityAmount.div(10).mul(3).div(1000);
+                expect(
+                    (await tokenA.balanceOf(owner.address)).eq(
+                        BigNumber.from(initialSupply).div(3).add(fee)
+                    )
+                );
+            });
+            it("Updates reserves", async () => {
+                expect(await csamm.reserveA()).to.equal(
+                    liquidityAmount.add(liquidityAmount.div(10))
+                );
+                expect((await csamm.reserveB()).lt(liquidityAmount)).to.be.true;
+            });
+            it("Emits Swapped event", async () => {
+                const events = receipt.events!;
+                const swapEvent = events.find((event) => event.event === "Swapped")!;
+                expect(swapEvent.event).to.equal("Swapped");
+                const args = swapEvent.args!;
+                expect(args.from).to.equal(tokenA.address);
+                expect(args.to).to.equal(tokenB.address);
+                expect(args.amountReceived).to.equal(liquidityAmount.div(10));
+                expect(args.amountReturned).to.equal(await tokenB.balanceOf(actor.address));
+            });
+        });
+        describe("Failure", () => {
+            it("Reverts when token is not in pair", async () => {
+                // give zero address, should revert
+                await expect(csamm.connect(owner).swap(
+                    ethers.constants.AddressZero,
+                    5
+                )).to.be.revertedWith("Token not in pair");
+            });
+            it("Reverts when amount received is 0", async () => {
+                // give zero amount, should revert
+                await expect(csamm.connect(owner).swap(
+                    tokenA.address,
+                    0
+                )).to.be.revertedWith("Amount must be greater than 0");
+            });
+        });
     });
 });
