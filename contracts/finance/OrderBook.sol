@@ -132,6 +132,11 @@ contract OrderBook {
         return tokens[_token][user];
     }
 
+
+    /// @param _tokenGet The token the user wants to get
+    /// @param _amountGet The amount the user wants to get
+    /// @param _tokenGive The token the user wants to give
+    /// @param _amountGive The amount the user wants to give
     function makeOrder(
         address _tokenGet,
         uint256 _amountGet,
@@ -162,7 +167,8 @@ contract OrderBook {
     function cancelOrder(uint256 _id) external {
         _Order memory orderToCancel = orders[_id];
         require(orderToCancel.user == msg.sender, "Not your order");
-        require(orderToCancel.id == _id, "Order does not exist");
+        // technically i dont need the commented out line below as the require above will revert if the order does not exist. (ie. if the order does not exist, when we get the orderToCancel, all datatypes will be falsey, meaning the user will not be the msg.sender since orderToCancel.user will be 0x0)
+        // require(orderToCancel.id == _id, "Order does not exist");
         require(!orderFilled[_id], "Order already filled");
         require(!orderCancelled[_id], "Order already cancelled");
         orderCancelled[_id] = true;
@@ -179,8 +185,8 @@ contract OrderBook {
 
     function fillOrder(uint256 _id) external {
         require(_id > 0 && _id <= orderCount, "Invalid order id");
+        require(!orderCancelled[_id], "Order already cancelled");
         require(!orderFilled[_id], "Order already filled");
-        require(!orderCancelled[_id], "Order cancelled");
 
         _Order storage orderToFill = orders[_id];
         _trade(
