@@ -61,7 +61,7 @@ contract EscrowFactory {
 
     // accept ether to this contract
     receive() external payable {}
-    
+
     fallback() external payable {
         revert("Invalid function call");
     }
@@ -73,7 +73,7 @@ contract EscrowFactory {
     ) public returns (address _escrowAddress) {
         require(verifiedEscrowIds[_escrowId], "Escrow parameters not verified");
         // Recompute current nonce to ensure consistency
-        uint currentNonce = nonce[_params.buyer][_params.lender] + 1;
+        uint currentNonce = nonce[_params.buyer][_params.seller] + 1;
         bytes32 computedEscrowId = _computeEscrowId(_params, currentNonce);
         require(_escrowId == computedEscrowId, "Escrow ID mismatch");
         // Update nonce and clear the verification flag

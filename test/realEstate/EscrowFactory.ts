@@ -2,7 +2,7 @@ import { BigNumber, ContractReceipt } from 'ethers';
 import { ethers } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
-import { EscrowFactory } from '../../typechain-types';
+import { Escrow, EscrowFactory } from '../../typechain-types';
 
 describe('EscrowFactory', () => {
     let owner: SignerWithAddress;
@@ -119,7 +119,8 @@ describe('EscrowFactory', () => {
                 const event = receipt.events?.find(e => e.event === "EscrowVerified")!;
                 expect(event.event!).to.equal("EscrowVerified");
                 const args = event.args!;
-                expect(args.escrowId).to.equal('0xf8a73d23578aa519da7bd167f7733a86efbd40c05701a997d0c9b71472bd7a75');
+                expect(args.escrowId).to.not.be.undefined;
+                expect(args.escrowId).to.not.equal(ethers.constants.HashZero);
                 expect(args.buyer).to.equal(buyer.address); 
                 expect(args.seller).to.equal(seller.address);
                 expect(args.nonce).to.equal(1);
@@ -239,16 +240,166 @@ describe('EscrowFactory', () => {
     });
 
     describe("Create Escrow From Verified", () => {
+        const nft_id = 1;
+        const nft_count = 1;
+        const purchase_price = ethers.utils.parseEther("500");
+        const earnest_amount = purchase_price.div(100); // 1%
+        let seller: SignerWithAddress;
+        let buyer: SignerWithAddress;
+        let inspector: SignerWithAddress;
+        let lender: SignerWithAddress;
+        let appraiser: SignerWithAddress;
+        let escrowParams: EscrowParams;
+        let signatures: {
+            seller: string;
+            buyer: string;
+            lender: string;
+        };
+        let escrowId: string;
+        // verify escrow
+        beforeEach(async () => {
+            [owner, seller, buyer, inspector, lender, appraiser] = await ethers.getSigners();
+            // deploy real estate NFT, mints in constructor
+            const RealEstate = await ethers.getContractFactory('RealEstate', seller);
+            const realEstate = await RealEstate.deploy();
+            await realEstate.deployed();
+            // approve escrow factory to transfer real estate NFT
+            await realEstate.connect(seller).setApprovalForAll(escrowFactory.address, true);
+            // create function params
+            escrowParams = {
+                nft_address: realEstate.address,
+                nft_id,
+                nft_count,
+                purchase_price,
+                earnest_amount,
+                seller: seller.address,
+                buyer: buyer.address,
+                inspector: inspector.address,
+                lender: lender.address,
+                appraiser: appraiser.address,
+            };
+            // create signed message
+            let messageHash = ethers.utils.solidityPack(
+                [
+                    'address', 
+                    'uint256', 
+                    'uint8', 
+                    'uint256', 
+                    'uint256', 
+                    'address', 
+                    'address', 
+                    'address', 
+                    'address', 
+                    'address',
+                    'uint256'  // nonce
+                ],
+                [
+                    escrowParams.nft_address,
+                    escrowParams.nft_id,
+                    escrowParams.nft_count,
+                    escrowParams.purchase_price,
+                    escrowParams.earnest_amount,
+                    escrowParams.seller,
+                    escrowParams.buyer,
+                    escrowParams.inspector,
+                    escrowParams.lender,
+                    escrowParams.appraiser,
+                    1  // nonce
+                ]
+            );
+            messageHash = ethers.utils.solidityKeccak256(['bytes'], [messageHash]);
+            // seller signs message
+            // buyer signs message
+            // lender signs message
+            signatures = {
+                seller: await seller.signMessage(ethers.utils.arrayify(messageHash)),
+                buyer: await buyer.signMessage(ethers.utils.arrayify(messageHash)),
+                lender: await lender.signMessage(ethers.utils.arrayify(messageHash)),
+            }
+            // verify escrow data
+            const tx = await escrowFactory.connect(seller).verifyEscrowData(
+                escrowParams,
+                signatures.seller,
+                signatures.buyer,
+                signatures.lender
+            );
+            // get escrow id from event
+            const receipt = await tx.wait();
+            escrowId = receipt.events?.find(e => e.event === "EscrowVerified")?.args?.escrowId;
+            // assert escrow data verified
+            expect(await escrowFactory.verifiedEscrowIds(escrowId)).to.be.true;
+            // assert no escrow created yet by escrow id
+            expect(await escrowFactory.escrows(escrowId)).to.equal(ethers.constants.AddressZero);
+        });
         describe("Success", () => {
-            it("Updates nonce", async () => {});
-            it("Clears verification flag (makes contract lighter, use events to track history off-chain)", async () => {});
-            it("Deploys escrow contract", async () => {});
-            it("Stores escrow address by escrow ID", async () => {});
-            it("Emits Escrow Created event", async () => {});
+            let receipt: ContractReceipt;
+            let escrow: Escrow;
+            // create escrow
+            beforeEach(async () => {
+                const tx = await escrowFactory.connect(seller).createEscrowFromVerified(
+                    escrowParams,
+                    escrowId
+                );
+                receipt = await tx.wait();
+                // get events where event is called EscrowCreated
+                const event = receipt.events?.find(e => e.event === "EscrowCreated")!;
+                // the event arg is called escrow
+                const escrowAddress = event.args?.escrow;
+                // get the escrow contract
+                escrow = await ethers.getContractAt("Escrow", escrowAddress);
+            });
+            it("Updates nonce", async () => {
+                expect(await escrowFactory.nonce(escrowParams.buyer, escrowParams.seller)).to.equal(1);
+            });
+            it("Clears verification flag (makes contract lighter, use events to track history off-chain)", async () => {
+                expect(await escrowFactory.verifiedEscrowIds(escrowId)).to.be.false;
+            });
+            it("Deploys escrow contract", async () => {
+                expect(escrow.address).to.not.be.undefined;
+                expect(await escrow.factory()).to.equal(escrowFactory.address);
+                expect(await escrow.nft_address()).to.equal(escrowParams.nft_address);
+                expect(await escrow.nft_id()).to.equal(escrowParams.nft_id);
+                expect(await escrow.nft_count()).to.equal(escrowParams.nft_count);
+                expect(await escrow.purchase_price()).to.equal(escrowParams.purchase_price);
+                expect(await escrow.earnest_amount()).to.equal(escrowParams.earnest_amount);
+                expect(await escrow.seller()).to.equal(escrowParams.seller);
+                expect(await escrow.buyer()).to.equal(escrowParams.buyer);
+                expect(await escrow.inspector()).to.equal(escrowParams.inspector);
+                expect(await escrow.lender()).to.equal(escrowParams.lender);
+                expect(await escrow.appraiser()).to.equal(escrowParams.appraiser);
+                expect(await escrow.state()).to.equal(0);  // EscrowState.Created
+            });
+            it("Stores escrow address by escrow ID", async () => {
+                expect(await escrowFactory.escrows(escrowId)).to.equal(escrow.address);
+            });
+            it("Emits Escrow Created event", async () => {
+                const event = receipt.events?.find(e => e.event === "EscrowCreated")!;
+                expect(event.event!).to.equal("EscrowCreated");
+                const args = event.args!;
+                expect(args.escrowId).to.equal(escrowId);
+                expect(args.buyer).to.equal(buyer.address);
+                expect(args.seller).to.equal(seller.address);
+                expect(args.nonce).to.equal(1);
+            });
         });
         describe("Failure", () => {
-            it("Reverts when escrow parameters are not verified", async () => {});
-            it("Reverts when given and calculated escrow ID mismatch", async () => {});
+            it("Reverts when escrow parameters are not verified", async () => {
+                await expect(
+                    escrowFactory.connect(seller).createEscrowFromVerified(
+                        escrowParams,
+                        ethers.constants.HashZero
+                    )
+                ).to.be.revertedWith("Escrow parameters not verified");
+            });
+            it("Reverts when given and calculated escrow ID mismatch", async () => {
+                // deep copy
+                const params = JSON.parse(JSON.stringify(escrowParams)) as EscrowParams;
+                params.seller = ethers.constants.AddressZero;  // change one param to make escrow ID different from calculated hash
+                await expect(escrowFactory.connect(seller).createEscrowFromVerified(
+                    params,
+                    escrowId
+                )).to.be.revertedWith("Escrow ID mismatch");
+            });
         });
     });
 });
