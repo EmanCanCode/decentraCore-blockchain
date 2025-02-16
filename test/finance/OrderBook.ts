@@ -10,7 +10,6 @@ describe("Order Book", () => {
     let signers: SignerWithAddress[];
     let tokenA: FungibleToken;
     let obmm: OrderBook;
-    const etherAddr = "0x0000000000000000000000000000000000000000";  // address of ether
     const initialSupply: string = "10000000000000000000000000000000";
     beforeEach(async () => {
         // get signers
@@ -39,7 +38,7 @@ describe("Order Book", () => {
             const balance = await ethers.provider.getBalance(obmm.address);
             expect(balance).to.equal(0);
             // assert that users balance is 0
-            const userBalance = await obmm.tokens(etherAddr, owner.address);
+            const userBalance = await obmm.tokens(ethers.constants.AddressZero, owner.address);
             expect(userBalance).to.equal(0);
             // deposit ether
             const tx = await obmm.depositEther({ value: ethers.utils.parseEther("1") });
@@ -48,7 +47,7 @@ describe("Order Book", () => {
         it("Stores and tracks user deposit", async () => {
             const balance = await ethers.provider.getBalance(obmm.address);
             expect(balance).to.equal(ethers.utils.parseEther("1"));
-            const userBalance = await obmm.tokens(etherAddr, owner.address);
+            const userBalance = await obmm.tokens(ethers.constants.AddressZero, owner.address);
             expect(userBalance).to.equal(ethers.utils.parseEther("1"));
         });
         it("Emits Deposit event", async () => {
@@ -56,7 +55,7 @@ describe("Order Book", () => {
             const event = events.filter((event) => event.event === "Deposit")[0];
             expect(event.event!).to.equal("Deposit");
             const args = event.args!;
-            expect(args.token).to.equal(etherAddr);
+            expect(args.token).to.equal(ethers.constants.AddressZero);
             expect(args.user).to.equal(owner.address);
             expect(args.amount).to.equal(ethers.utils.parseEther("1"));
             expect(args.balance).to.equal(ethers.utils.parseEther("1"));
@@ -98,7 +97,7 @@ describe("Order Book", () => {
         describe("Failure", () => {
             it("Reverts when token address is ether address", async () => {
                 await expect(obmm.depositToken(
-                    etherAddr,
+                    ethers.constants.AddressZero,
                     ethers.utils.parseEther("1")
                 )).to.be.revertedWith("Invalid token address");
             });
@@ -106,22 +105,151 @@ describe("Order Book", () => {
     });
 
     describe("Withdraw Ether", () => {
-        describe("Success", () => {});
-        describe("Failure", () => {});
+        let receipt: ContractReceipt;
+        beforeEach(async () => {
+            // deposit ether
+            await obmm.depositEther({ value: ethers.utils.parseEther("1") });
+            // assert that the contract has ether
+            const balance = await ethers.provider.getBalance(obmm.address);
+            expect(balance).to.equal(ethers.utils.parseEther("1"));
+            // assert that users balance is 1
+            const userBalance = await obmm.tokens(ethers.constants.AddressZero, owner.address);
+            expect(userBalance).to.equal(ethers.utils.parseEther("1"));
+            // withdraw ether
+            const tx = await obmm.withdrawEther(ethers.utils.parseEther("1"));
+            receipt = await tx.wait();
+        });
+
+        describe("Success", () => {
+            it("Stores and tracks user withdrawal", async () => {
+                const balance = await ethers.provider.getBalance(obmm.address);
+                expect(balance).to.equal(0);
+                const userBalance = await obmm.tokens(ethers.constants.AddressZero, owner.address);
+                expect(userBalance).to.equal(0);
+            });
+            it("Emits Withdraw event", async () => {
+                const events = receipt.events!;
+                const event = events.filter((event) => event.event === "Withdraw")[0];
+                expect(event.event!).to.equal("Withdraw");
+                const args = event.args!;
+                expect(args.token).to.equal(ethers.constants.AddressZero);
+                expect(args.user).to.equal(owner.address);
+                expect(args.amount).to.equal(ethers.utils.parseEther("1"));
+                expect(args.balance).to.equal(0);
+            });
+        });
+        describe("Failure", () => {
+            it("Reverts when user has insufficient balance", async () => {
+                await expect(
+                    obmm.withdrawEther(ethers.utils.parseEther("1"))
+                ).to.be.revertedWith("Insufficient balance");
+            });
+        });
     });
 
     describe("Withdraw Token", () => {
-        describe("Success", () => {});
-        describe("Failure", () => {});
+        describe("Success", () => {
+            let receipt: ContractReceipt;
+            beforeEach(async () => {
+                // deposit token
+                await tokenA.approve(obmm.address, ethers.utils.parseEther("1"));
+                await obmm.depositToken(tokenA.address, ethers.utils.parseEther("1"));
+                // assert that the contract has token balance
+                const balance = await tokenA.balanceOf(obmm.address);
+                expect(balance).to.equal(ethers.utils.parseEther("1"));
+                // assert that users balance is 1
+                const userBalance = await obmm.tokens(tokenA.address, owner.address);
+                expect(userBalance).to.equal(ethers.utils.parseEther("1"));
+                // withdraw token
+                const tx = await obmm.withdrawToken(tokenA.address, ethers.utils.parseEther("1"));
+                receipt = await tx.wait();
+            });
+            it("Stores and tracks user withdrawal", async () => {
+                const balance = await tokenA.balanceOf(obmm.address);
+                expect(balance).to.equal(0);
+                const userBalance = await obmm.tokens(tokenA.address, owner.address);
+                expect(userBalance).to.equal(0);
+            });
+            it("Emits Withdraw event", async () => {
+                const events = receipt.events!;
+                const event = events.filter((event) => event.event === "Withdraw")[0];
+                expect(event.event!).to.equal("Withdraw");
+                const args = event.args!;
+                expect(args.token).to.equal(tokenA.address);
+                expect(args.user).to.equal(owner.address);
+                expect(args.amount).to.equal(ethers.utils.parseEther("1"));
+                expect(args.balance).to.equal(0);
+            });
+        });
+        describe("Failure", () => {
+            it("Reverts when token address is ether address", async () => {
+                await expect(obmm.withdrawToken(
+                    ethers.constants.AddressZero,
+                    ethers.utils.parseEther("1")
+                )).to.be.revertedWith("Invalid token address");
+            });
+            it("Reverts when user has insufficient balance", async () => {
+                await expect(
+                    obmm.withdrawToken(tokenA.address, ethers.utils.parseEther("1"))
+                ).to.be.revertedWith("Insufficient token balance");
+            });
+        });
     });
 
     describe("Make Order", () => {
-        describe("Success", () => {});
-        describe("Failure", () => {});
+        let receipt: ContractReceipt;
+        beforeEach(async () => {
+            // deposit token
+            await tokenA.approve(obmm.address, ethers.utils.parseEther("1"));
+            await obmm.depositToken(tokenA.address, ethers.utils.parseEther("1"));
+            // assert order count is 0
+            expect(await obmm.orderCount()).to.equal(0);
+            // assert there is no order for order count 1 (which will be the order id for the first order)
+            const order = await obmm.orders(1);
+            expect(order.id).to.equal(0);
+            expect(order.user).to.equal(ethers.constants.AddressZero);
+            // make order
+            const tx = await obmm.makeOrder(tokenA.address, ethers.utils.parseEther("1"), ethers.constants.AddressZero, ethers.utils.parseEther("1"));
+            receipt = await tx.wait();
+        });
+        it("Increments order count", async () => {
+            expect(await obmm.orderCount()).to.equal(1);
+        });
+        it("Stores order", async () => {
+            const order = await obmm.orders(1);
+            expect(order.id).to.equal(1);
+            expect(order.user).to.equal(owner.address);
+            expect(order.tokenGet).to.equal(tokenA.address);
+            expect(order.amountGet).to.equal(ethers.utils.parseEther("1"));
+            expect(order.tokenGive).to.equal(ethers.constants.AddressZero);
+            expect(order.amountGive).to.equal(ethers.utils.parseEther("1"));
+            const block = await ethers.provider.getBlock(receipt.blockNumber!);
+            expect(order.timestamp).to.equal(block.timestamp);
+        });
+        it("Emits Order event", async () => {
+            const events = receipt.events!;
+            const event = events.filter((event) => event.event === "Order")[0];
+            expect(event.event!).to.equal("Order");
+            const args = event.args!;
+            expect(args.id).to.equal(1);
+            expect(args.user).to.equal(owner.address);
+            expect(args.tokenGet).to.equal(tokenA.address);
+            expect(args.amountGet).to.equal(ethers.utils.parseEther("1"));
+            expect(args.tokenGive).to.equal(ethers.constants.AddressZero);
+            expect(args.amountGive).to.equal(ethers.utils.parseEther("1"));
+            const block = await ethers.provider.getBlock(receipt.blockNumber!);
+            expect(args.timestamp).to.equal(block.timestamp);
+        });
+
     });
     describe("Cancel Order", () => {
         describe("Success", () => {});
-        describe("Failure", () => {});
+        describe("Failure", () => {
+            it("Reverts when it is not actor's order", async () => {});
+            it("Reverts when order does not exist", async () => {});
+            it("Reverts when order is already filled", async () => {});
+            it("Reverts when the order is already cancelled", async () => {});
+        });
     });
     describe("Fill Order", () => {
         describe("Success", () => {});

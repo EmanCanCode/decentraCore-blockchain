@@ -6,6 +6,8 @@
     "npm": "10.7.0"
   },
   "scripts": {
+    "test": "npx hardhat test",
+    "compile": "npx hardhat compile",
     "test-cpamm": "npx hardhat test test/finance/ConstantProduct.ts",
     "test-csamm": "npx hardhat test test/finance/ConstantSum.ts",
     "test-obmm": "npx hardhat test test/finance/OrderBook.ts"

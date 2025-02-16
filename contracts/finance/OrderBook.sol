@@ -91,13 +91,6 @@ contract OrderBook {
         emit Deposit(ETHER, msg.sender, msg.value, tokens[ETHER][msg.sender]);
     }
 
-    function withdrawEther(uint _amount) external {
-        require(tokens[ETHER][msg.sender] >= _amount, "Insufficient balance");
-        tokens[ETHER][msg.sender] -= _amount;
-        payable(msg.sender).transfer(_amount);
-        emit Withdraw(ETHER, msg.sender, _amount, tokens[ETHER][msg.sender]);
-    }
-
     // Keep in mind I have to APPROVE the tokens before calling this.
     function depositToken(address _token, uint _amount) external {
         require(_token != ETHER, "Invalid token address");
@@ -108,6 +101,13 @@ contract OrderBook {
         );
         tokens[_token][msg.sender] += _amount;
         emit Deposit(_token, msg.sender, _amount, tokens[_token][msg.sender]);
+    }
+
+    function withdrawEther(uint _amount) external {
+        require(tokens[ETHER][msg.sender] >= _amount, "Insufficient balance");
+        tokens[ETHER][msg.sender] -= _amount;
+        payable(msg.sender).transfer(_amount);
+        emit Withdraw(ETHER, msg.sender, _amount, tokens[ETHER][msg.sender]);
     }
 
     function withdrawToken(address _token, uint _amount) external {
@@ -163,6 +163,8 @@ contract OrderBook {
         _Order memory orderToCancel = orders[_id];
         require(orderToCancel.user == msg.sender, "Not your order");
         require(orderToCancel.id == _id, "Order does not exist");
+        require(!orderFilled[_id], "Order already filled");
+        require(!orderCancelled[_id], "Order already cancelled");
         orderCancelled[_id] = true;
         emit Cancel(
             _id,
