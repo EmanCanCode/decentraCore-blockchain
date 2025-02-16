@@ -98,7 +98,7 @@ contract Escrow is IERC1155Receiver {
         // only buyer deposits earnest
         require(msg.sender == buyer, "Only buyer can deposit earnest");
         // buyer must deposit the earnest amount
-        require(msg.value == earnest_amount, "Incorrect amount");
+        require(msg.value == earnest_amount, "Incorrect earnest amount");
         require(deposit_balance[msg.sender] == 0, "Already deposited");
         // buyer's deposit balance is updated
         deposit_balance[msg.sender] += msg.value;
