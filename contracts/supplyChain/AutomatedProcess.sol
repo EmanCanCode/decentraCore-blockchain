@@ -27,7 +27,8 @@ contract AutomatedProcess {
     }
 
     event SetProvenance(address provenance);
-    event SetProcessValue(address recipient, uint256 nonce, uint256 value);  
+    event SetProcessValue(address actor, uint256 nonce, uint256 value);  
+    event ReleaseProcessValue(address actor, uint256 nonce, uint256 value);
 
     function setProvenance(address _provenance) public onlyOwner {
         provenance = _provenance;
@@ -36,26 +37,28 @@ contract AutomatedProcess {
 
     function setProcessValue(
         uint256 _nonce, 
-        address _recipient
-    ) public payable onlyProvenance returns(bool) { // msg.sender is the provenance contract so i need to pass the _recipient address
-        processValues[_recipient][_nonce] = msg.value;
-        emit SetProcessValue(_recipient, _nonce, msg.value);
+        address _actor
+    ) public payable onlyProvenance returns(bool) { // msg.sender is the provenance contract so i need to pass the _actor address
+        processValues[_actor][_nonce] = msg.value;
+        emit SetProcessValue(_actor, _nonce, msg.value);
         return true;
     }
 
-    function releaseProcessValue(uint256 _nonce, address recipient) public onlyOwner  {
+    function releaseProcessValue(uint32 _nonce, address _actor) public onlyOwner  {
         require(provenance != address(0), "Provenance not set");
-        require(processValues[recipient][_nonce] > 0, "No value to release");
+        require(processValues[_actor][_nonce] > 0, "No value to release");
         // ensure the state is complete
         require(
-            IProvenance(provenance).isCompleted(abi.encodePacked(recipient, _nonce)),
+            IProvenance(provenance).isCompleted(abi.encodePacked(_actor, _nonce)),
             "Provenance state not Completed"
         );
         // reset the value to 0
-        uint value = processValues[recipient][_nonce];  // store the value
-        processValues[recipient][_nonce] = 0;
-        // release the value to the recipient
-        payable(recipient).transfer(value);
+        uint value = processValues[_actor][_nonce];  // store the value
+        processValues[_actor][_nonce] = 0;
+        // release the value to the contract owner;
+        payable(owner).transfer(value);
+
+        emit ReleaseProcessValue(_actor, _nonce, value);
     }
 
     //     ------     INVENTORY MANAGEMENT     ------     //

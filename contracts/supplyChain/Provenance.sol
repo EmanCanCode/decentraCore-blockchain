@@ -6,7 +6,7 @@ import { IAutomatedProcess } from "./Interfaces.sol";
 contract Provenance {
     address public owner;
     address public automatedProcess; // automatedProcess contract address
-    mapping(address => uint) public nonce;
+    mapping(address => uint32) public nonce;
     bool public reentrancyGuard = false;
     // mapping from a product ID (could be a unique identifier for the product or batch)
     // to an array of provenance events.
@@ -37,7 +37,9 @@ contract Provenance {
         State state,
         string additionalInfo,
         address recordCreator,
-        uint256 value
+        uint256 value,
+        uint256 nonce,
+        bytes productId
     );
 
     event UpdatedRecord(
@@ -56,6 +58,11 @@ contract Provenance {
         reentrancyGuard = false;
     }
 
+    modifier AutomatedProcessSet() {
+        require(automatedProcess != address(0), "Automated Process not set");
+        _;
+    }
+
     event SetAutomatedProcess(address automatedProcess);
 
     function createRecord(
@@ -66,8 +73,7 @@ contract Provenance {
         string memory _location,
         State _state,
         string memory _additionalInfo
-    ) public payable {
-        require(automatedProcess != address(0), "Automated process not set");
+    ) public payable AutomatedProcessSet ReetranyGuard {
         // create a new ProductRecord object
         ProductRecord memory newRecord = ProductRecord({
             productName: _productName,
@@ -103,7 +109,9 @@ contract Provenance {
             _state,
             _additionalInfo,
             msg.sender,
-            msg.value
+            msg.value,
+            nonce[msg.sender],
+            productId
         );
     }
     
@@ -115,10 +123,10 @@ contract Provenance {
         string memory _additionalInfo
     ) public {
         // ensure the record exists
-        ProductRecord[] storage records = productHistory[_productId];
+        ProductRecord[] memory records = productHistory[_productId];
         require(records.length > 0, "No record found for this product ID");
         // i dont need the creator in the ProductRecord struct, i can just get it from the productId
-        (address creator, ) = abi.decode(_productId, (address, uint));
+        (address creator, ) = decodeProductId(_productId);
         // here we could implement different checks on who can call this function...
         // ... for now only owner or creator of the record can update it.
         require(
@@ -131,7 +139,6 @@ contract Provenance {
             !isCompleted(_productId),
             "Cannot update a record that is in the 'Completed' state"
         );
-
 
         // create a new ProductRecord object
         // add the updated record to the product's history
@@ -154,6 +161,29 @@ contract Provenance {
             msg.sender
         );
     }
+
+    function decodeProductId(bytes memory productId) public pure returns (address creator, uint32 nonceValue) {
+        require(productId.length == 24, "Invalid product id length");
+        
+        uint256 loaded;
+        assembly {
+            loaded := mload(add(productId, 32))
+        }
+        // The first 20 bytes of the 32-byte word are our address.
+        // Shift right by 12 bytes (96 bits) to extract the address.
+        creator = address(uint160(loaded >> 96));
+
+        uint256 loadedNonce;
+        assembly {
+            // Load the word starting at offset 52 (32 + 20)
+            loadedNonce := mload(add(productId, 52))
+        }
+        // Shift right by 224 bits (28 bytes) to extract the 4-byte nonce.
+        nonceValue = uint32(loadedNonce >> 224);
+    }
+
+
+
     
 
     function getHistory(bytes memory _productId)

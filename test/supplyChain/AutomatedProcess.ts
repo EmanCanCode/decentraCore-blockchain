@@ -1,19 +1,29 @@
 import { ethers } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
-import { AutomatedProcess } from "../../typechain-types";
-import { ContractReceipt } from "ethers";
-
+import { AutomatedProcess, Provenance } from "../../typechain-types";
+import { BigNumber, ContractReceipt } from "ethers";
+import { productRecords, encodeProductId, State } from "../../helpers/provenance";
 
 describe("Automated Process", () => {
     let owner: SignerWithAddress;
     let automatedProcess: AutomatedProcess;
+    let provenance: Provenance;
     beforeEach(async () => {
         [owner] = await ethers.getSigners();
 
         const AutomatedProcess = await ethers.getContractFactory("AutomatedProcess");
         automatedProcess = await AutomatedProcess.deploy();
         await automatedProcess.deployed();
+
+        // deploy provenance contract
+        const Provenance = await ethers.getContractFactory("Provenance");
+        provenance = await Provenance.deploy();
+
+        // set provenance contract on automated process
+        await automatedProcess.connect(owner).setProvenance(provenance.address);
+        // set automated process on provenance contract (all testing for provenance contract is done in its own test file)
+        await provenance.connect(owner).setAutomatedProcess(automatedProcess.address);
     });
 
     describe("Deployment", () => {
@@ -25,19 +35,20 @@ describe("Automated Process", () => {
     describe("Provenance", () => {
         describe("Set Provenance", () => {
             let receipt: ContractReceipt;
-            let provenanceContractAddress: string;
             beforeEach(async () => {
-                // set provenance contract
-                // we can make it arbitrary for testing bc we are not testing the provenance contract here
-                provenanceContractAddress = (await ethers.getSigners())[1].address;
-                // assert provenance contract not set
+                // it was set in the very top beforeEach
+                expect(await automatedProcess.provenance()).to.equal(provenance.address);
+                // unset provenance contract
+                await automatedProcess.connect(owner).setProvenance(ethers.constants.AddressZero);
+                // assert its unset (default value when deployed)
                 expect(await automatedProcess.provenance()).to.equal(ethers.constants.AddressZero);
-                const tx = await automatedProcess.connect(owner).setProvenance(provenanceContractAddress);
+                // set provenance contract
+                const tx = await automatedProcess.connect(owner).setProvenance(provenance.address);
                 receipt = await tx.wait();
             });
             describe("Success", () => {
                 it("Stores new provenance contract", async () => {
-                    expect(await automatedProcess.provenance()).to.equal(provenanceContractAddress);
+                    expect(await automatedProcess.provenance()).to.equal(provenance.address);
                 });
                 it("Emits SetProvenance event", async () => {
                     // find event
@@ -46,14 +57,14 @@ describe("Automated Process", () => {
                     expect(event).to.not.be.undefined;
                     // assert event values, redundant to 👆🏾 but good practice
                     expect(event?.event).to.equal("SetProvenance");
-                    expect(event?.args?.provenance).to.equal(provenanceContractAddress);
+                    expect(event?.args?.provenance).to.equal(provenance.address);
                 });
             });
             describe("Failure", () => {
                 it("Reverts when other than owner calls", async () => {
                     let otherThanOwner = (await ethers.getSigners())[2];
                     await expect(
-                        automatedProcess.connect(otherThanOwner).setProvenance(provenanceContractAddress)
+                        automatedProcess.connect(otherThanOwner).setProvenance(ethers.constants.AddressZero) // couldve been any address
                     ).to.be.revertedWith("Not authorized");
                 });
             });
@@ -64,49 +75,61 @@ describe("Automated Process", () => {
                 const processValue = ethers.utils.parseEther('5');
                 // nonce is created from provenance contract, passed in as argument. so we can make it arbitrary for testing
                 const nonce = 1; 
-                let provenance: Provenance_;
-                let recipient: SignerWithAddress;
+                let recordCreator: SignerWithAddress;
+                const product = productRecords[0];
                 beforeEach(async () => {
-                    // set provenance contract
-                    [provenance, recipient]  = (await ethers.getSigners());  // wink wink, nudge nudge. check the bottom of the file
-                    // no need to assert as we have already tested this in the previous test                    
-                    await automatedProcess.connect(owner).setProvenance(provenance.address);
-                    // assert process value not set
-                    expect(await automatedProcess.processValues(recipient.address, nonce)).to.equal(0);
-                    // set process value
-                    const tx = await automatedProcess.connect(provenance).setProcessValue(
-                        nonce, 
-                        recipient.address, 
+                    recordCreator = (await ethers.getSigners())[1];
+                    // to call setProcessValue we have to call createRecord on provenance contract.
+                    const tx = await provenance.connect(recordCreator).createRecord(
+                        product.productName,
+                        product.variety,
+                        product.productType,
+                        product.timestamp,
+                        product.location,
+                        product.state,
+                        product.additionalInfo,
                         { value: processValue }
                     );
                     receipt = await tx.wait();
                 });
                 it("Stores new process value", async () => {
-                    expect(await automatedProcess.processValues(recipient.address, nonce)).to.equal(processValue);
+                    expect(await automatedProcess.processValues(recordCreator.address, nonce)).to.equal(processValue);
+                });
+                it("Receives process value", async () => {
+                    // get ether balance of automated process contract
+                    expect(
+                        await ethers.provider.getBalance(automatedProcess.address)
+                    ).to.equal(processValue);
                 });
                 it("Emits SetProcessValue event", async () => {
-                    // find event
-                    const event = receipt.events?.find((event) => event.event === "SetProcessValue");
-                    // assert event exists
-                    expect(event).to.not.be.undefined;
-                    // assert event values, redundant to 👆🏾 but good practice
-                    expect(event?.event).to.equal("SetProcessValue");
-                    expect(event?.args?.recipient).to.equal(recipient.address);
-                    expect(event?.args?.nonce).to.equal(nonce);
-                    expect(event?.args?.value).to.equal(processValue);
+                    const blockNumber = receipt.blockNumber!;
+                    const filter = {
+                        address: automatedProcess.address,  // or whichever contract you're interested in
+                        fromBlock: blockNumber,
+                        toBlock: blockNumber,
+                        topics: [ethers.utils.id("SetProcessValue(address,uint256,uint256)")]
+                    };
+                    const logs = await ethers.provider.getLogs(filter);
+                    const parsedLog = automatedProcess.interface.parseLog(logs[0]);
+                    // console.log(parsedLog); 
+                    expect(parsedLog.eventFragment.type).to.equal("event");
+                    expect(parsedLog.name).to.equal("SetProcessValue");
+                    const args = parsedLog.args;
+                    expect(args.nonce).to.equal(nonce);
+                    expect(args.value).to.equal(processValue);
+                    expect(args.actor).to.equal(recordCreator.address);
                 });
             });
             describe("Failure", () => {
                 it("Reverts when other than provenance calls", async () => {
-                    const provenance = (await ethers.getSigners())[1];
-                    // set provenance contract
-                    await automatedProcess.connect(owner).setProvenance(provenance.address);
                     const otherThanProvenance = (await ethers.getSigners())[2];
                     await expect(
                         automatedProcess.connect(otherThanProvenance).setProcessValue(1, otherThanProvenance.address, { value: 0 })
                     ).to.be.revertedWith("Not authorized");
                 });
                 it("Reverts when provenance contract not set", async () => {
+                    // unset provenance contract
+                    await automatedProcess.connect(owner).setProvenance(ethers.constants.AddressZero);
                     let otherThanProvenance = (await ethers.getSigners())[2];
                     await expect(
                         automatedProcess.connect(otherThanProvenance).setProcessValue(1, otherThanProvenance.address, { value: 0 })
@@ -115,41 +138,123 @@ describe("Automated Process", () => {
             });
         });
         describe("Release Process Value", () => {
+            let receipt: ContractReceipt;
+            let recordCreator: SignerWithAddress;
+            const processValue = ethers.utils.parseEther('5');
+            const nonce = 1;
+            const product = productRecords[0];
+            let ownerBalanceBefore: BigNumber;
+            let productId: Uint8Array;
+            beforeEach(async () => {
+                recordCreator = (await ethers.getSigners())[1];
+                // create order, sets process value
+                let tx = await provenance.connect(recordCreator).createRecord(
+                    product.productName,
+                    product.variety,
+                    product.productType,
+                    product.timestamp,
+                    product.location,
+                    product.state,
+                    product.additionalInfo,
+                    { value: processValue }
+                );
+                await tx.wait();
+                // update order to "Completed"
+                productId = ethers.utils.arrayify(encodeProductId(recordCreator.address, nonce));
+                tx = await provenance.connect(recordCreator).updateRecord(
+                    productId,
+                    123457, // timestamp
+                    'here', // location
+                    State.Completed,
+                    "Completed order"
+                );
+                await tx.wait();
+                // get owner balance before release
+                ownerBalanceBefore = await ethers.provider.getBalance(owner.address);
+                // release process value
+                tx = await automatedProcess.connect(owner).releaseProcessValue(nonce, recordCreator.address);
+                receipt = await tx.wait();
+            });
             describe("Success", () => {
-                it("Stores new process value", async () => {});
-                it("Emits SetProcessValue event", async () => {});
+                it("Gives process value to owner", async () => {
+                    expect(await owner.getBalance()).to.be.gt(ownerBalanceBefore);
+                });
+                it("Resets process value", async () => {
+                    expect(await automatedProcess.processValues(recordCreator.address, nonce)).to.equal(0);
+                });
+                it("Emits ReleaseProcessValue event", async () => {
+                    // find event
+                    const event = receipt.events?.find((event) => event.event === "ReleaseProcessValue");
+                    // assert event exists
+                    expect(event).to.not.be.undefined;
+                    // assert event values, redundant to 👆🏾 but good practice
+                    expect(event?.event).to.equal("ReleaseProcessValue");
+                    const args = event?.args!;
+                    expect(args.actor).to.equal(recordCreator.address);
+                    expect(args.nonce).to.equal(nonce);
+                    expect(args.value).to.equal(processValue);
+                });
             });
             describe("Failure", () => {
-                it("Reverts when other than owner calls", async () => {});
-                it("Reverts when provenance contract not set", async () => {});
-                it("Reverts when no process value to release", async () => {});
-                it("Reverts when provenance state not 'Completed'", async () => {});
+                it("Reverts when other than owner calls", async () => {
+                    let otherThanOwner = (await ethers.getSigners())[2];
+                    await expect(
+                        automatedProcess.connect(otherThanOwner).releaseProcessValue(1, otherThanOwner.address)
+                    ).to.be.revertedWith("Not authorized");
+                });
+                it("Reverts when provenance contract not set", async () => {
+                    // unset
+                    await automatedProcess.connect(owner).setProvenance(ethers.constants.AddressZero);
+                    await expect(
+                        automatedProcess.connect(owner).releaseProcessValue(1, owner.address)
+                    ).to.be.revertedWith("Provenance not set");
+                });
+                it("Reverts when no process value to release", async () => {
+                    // dont set process value
+                    await expect(
+                        automatedProcess.connect(owner).releaseProcessValue(1, owner.address)
+                    ).to.be.revertedWith("No value to release");
+                });
+                it("Reverts when provenance state not 'Completed'", async () => {
+                    // create order, but dont complete it
+                    await provenance.connect(recordCreator).createRecord(
+                        product.productName,
+                        product.variety,
+                        product.productType,
+                        product.timestamp,
+                        product.location,
+                        product.state,
+                        product.additionalInfo,
+                        { value: processValue }
+                    );
+                    await expect(
+                        automatedProcess.connect(owner).releaseProcessValue(2, recordCreator.address)
+                    ).to.be.revertedWith("Provenance state not Completed");
+                });
             });
         });
     });
 
 
-    describe("Inventory Management", () => {
-        describe("Set Inventory Management", () => {
-            describe("Success", () => {
-                it("Stores new Inventory Management contract", async () => {});
-                it("Emits SetInventoryManagement event", async () => {});
-            });
-            describe("Failure", () => {
-                it("Reverts when other than owner calls", async () => {});
-            });
-        });
-        describe("Update Stock", () => {
-            describe("Success", () => {
-                it("Updates stock on Inventory Management contract", async () => {});
-                it("Emits UpdatedStock event", async () => {});
-            });
-            describe("Failure", () => {
-                it("Reverts when other than owner calls", async () => {});
-                it("Reverts when Inventory Management contract not set", async () => {});
-            });
-        });
-    });
+    // describe("Inventory Management", () => {
+    //     describe("Set Inventory Management", () => {
+    //         describe("Success", () => {
+    //             it("Stores new Inventory Management contract", async () => {});
+    //             it("Emits SetInventoryManagement event", async () => {});
+    //         });
+    //         describe("Failure", () => {
+    //             it("Reverts when other than owner calls", async () => {});
+    //         });
+    //     });
+    //     describe("Update Stock", () => {
+    //         describe("Success", () => {
+    //             it("Updates stock on Inventory Management contract", async () => {});
+    //             it("Emits UpdatedStock event", async () => {});
+    //         });
+    //         describe("Failure", () => {
+    //             it("Reverts when other than owner calls", async () => {});
+    //             it("Reverts when Inventory Management contract not set", async () => {});
+    //         });
+    //     });
+    // });
 });
-
-interface Provenance_ extends SignerWithAddress {};
