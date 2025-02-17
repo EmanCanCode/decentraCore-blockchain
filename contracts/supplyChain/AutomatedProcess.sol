@@ -27,7 +27,7 @@ contract AutomatedProcess {
     }
 
     event SetProvenance(address provenance);
-    event SetProcessValue(address process, uint256 processId, uint256 value);  
+    event SetProcessValue(address recipient, uint256 nonce, uint256 value);  
 
     function setProvenance(address _provenance) public onlyOwner {
         provenance = _provenance;
@@ -36,10 +36,10 @@ contract AutomatedProcess {
 
     function setProcessValue(
         uint256 _nonce, 
-        address recipient
-    ) public payable onlyProvenance returns(bool) { // msg.sender is the provenance contract so i need to pass the recipient address
-        processValues[recipient][_nonce] = msg.value;
-        emit SetProcessValue(recipient, _nonce, msg.value);
+        address _recipient
+    ) public payable onlyProvenance returns(bool) { // msg.sender is the provenance contract so i need to pass the _recipient address
+        processValues[_recipient][_nonce] = msg.value;
+        emit SetProcessValue(_recipient, _nonce, msg.value);
         return true;
     }
 
