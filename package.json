@@ -12,7 +12,8 @@
     "test-csamm": "npx hardhat test test/finance/ConstantSum.ts",
     "test-obmm": "npx hardhat test test/finance/OrderBook.ts",
     "test-escrow": "npx hardhat test test/realEstate/Escrow.ts",
-    "test-factory": "npx hardhat test test/realEstate/EscrowFactory.ts"
+    "test-factory": "npx hardhat test test/realEstate/EscrowFactory.ts",
+    "test-auto": "npx hardhat test test/supplyChain/AutomatedProcess.ts"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^1.0.3",

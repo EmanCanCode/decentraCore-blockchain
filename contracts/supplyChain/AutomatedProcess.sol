@@ -6,6 +6,7 @@ contract AutomatedProcess {
     address public owner;
     address public provenance; // provenance contract address
     address public inventoryManagement; // inventoryManagement contract address
+    // process value is the amount of value that is given once the process is completed
     mapping(address => mapping(uint256 => uint256)) public processValues;  // mapping(user, nonce) => value
 
     constructor() {
@@ -48,7 +49,7 @@ contract AutomatedProcess {
         // ensure the state is complete
         require(
             IProvenance(provenance).isCompleted(abi.encodePacked(recipient, _nonce)),
-            "Provenance not completed"
+            "Provenance state not Completed"
         );
         // reset the value to 0
         uint value = processValues[recipient][_nonce];  // store the value
