@@ -181,9 +181,6 @@ contract Provenance {
         // Shift right by 224 bits (28 bytes) to extract the 4-byte nonce.
         nonceValue = uint32(loadedNonce >> 224);
     }
-
-
-
     
 
     function getHistory(bytes memory _productId)

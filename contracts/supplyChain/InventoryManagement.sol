@@ -5,7 +5,10 @@ contract InventoryManagement {
     address public owner;
     uint256 public nextItemId;
     address public automatedProcess; // automatedProcess contract address
-
+    // mapping from itemId to Item details.
+    mapping(uint256 => Item) public items;
+    // mapping from itemId to an array of inventory transactions.
+    mapping(uint256 => InventoryTransaction[]) public transactions;
     // represents an inventory item.
     struct Item {
         string name;
@@ -27,18 +30,18 @@ contract InventoryManagement {
         address user;      // the address that performed the action.
     }
     
-    // mapping from itemId to Item details.
-    mapping(uint256 => Item) public items;
-    // mapping from itemId to an array of inventory transactions.
-    mapping(uint256 => InventoryTransaction[]) public transactions;
+    
     
     event ItemRegistered(uint256 indexed itemId, string name, string description, uint256 reorderThreshold);
     event StockUpdated(uint256 indexed itemId, uint256 newQuantity, MovementType movementType, uint256 timestamp, string note);
     event ItemTransferred(uint256 indexed itemId, uint256 quantity, string fromLocation, string toLocation, uint256 timestamp, string note);
     event ItemDeleted(uint256 indexed itemId);
     event SetAutomatedProcess(address automatedProcess);
+    event SetReorderThreshold(uint256 indexed itemId, uint256 threshold);
+
+
     modifier onlyOwner() {
-        require(msg.sender == owner, "Only owner can call this function");
+        require(msg.sender == owner, "Not Authorized");
         _;
     }
 
@@ -83,10 +86,10 @@ contract InventoryManagement {
         string memory _note
     ) public onlyRegisteredItem(_itemId) { 
         if (msg.sender != owner) {  // if not owner, then only automated process can call this function
-            require(automatedProcess != address(0), "Automated process not set");
+            require(automatedProcess != address(0), "Automated Process not set");
             require(
                 msg.sender == automatedProcess,
-                "Only the automated process can call this function"
+                "Only the Automated Process can call this function"
             );
         }
           
@@ -120,7 +123,7 @@ contract InventoryManagement {
         string memory _note
     ) public onlyOwner onlyRegisteredItem(_itemId) {
         require(items[_itemId].quantity >= _quantity, "Insufficient stock");
-        
+        // this is where you can make this contract a controller of the inventory (maybe stores are its own contracts)... next level for sure
         transactions[_itemId].push(InventoryTransaction({
             quantity: _quantity,
             movementType: MovementType.Transfer,
@@ -136,6 +139,7 @@ contract InventoryManagement {
     // update reorder threshold
     function setReorderThreshold(uint256 _itemId, uint256 _threshold) public onlyOwner onlyRegisteredItem(_itemId) {
         items[_itemId].reorderThreshold = _threshold;
+        emit SetReorderThreshold(_itemId, _threshold);
     }
 
     // delete item

@@ -69,7 +69,7 @@ contract AutomatedProcess {
         emit SetInventoryManagement(_inventoryManagement);
     }
 
-    event UpdatedStock(uint256 itemId, uint256 quantity);
+    event UpdatedStock(uint256 itemId, uint256 quantity, IInventoryManagement.MovementType movementType);
     function updateStock(
         uint _itemId,
         uint _quantity,
@@ -79,6 +79,6 @@ contract AutomatedProcess {
     ) public onlyOwner {
         require(inventoryManagement != address(0), "Inventory management not set");
         IInventoryManagement(inventoryManagement).updateStock(_itemId, _quantity, _movementType, _location, _note);
-        emit UpdatedStock(_itemId, _quantity);
+        emit UpdatedStock(_itemId, _quantity, _movementType);
     }
 }

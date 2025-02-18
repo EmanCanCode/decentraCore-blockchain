@@ -1,9 +1,10 @@
 import { ethers } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
-import { AutomatedProcess, Provenance } from "../../typechain-types";
+import { AutomatedProcess, InventoryManagement, Provenance } from "../../typechain-types";
 import { BigNumber, ContractReceipt } from "ethers";
 import { productRecords, encodeProductId, State } from "../../helpers/provenance";
+import { item } from "../../helpers/inventoryManagement";
 
 describe("Automated Process", () => {
     let owner: SignerWithAddress;
@@ -93,7 +94,12 @@ describe("Automated Process", () => {
                     receipt = await tx.wait();
                 });
                 it("Stores new process value", async () => {
-                    expect(await automatedProcess.processValues(recordCreator.address, nonce)).to.equal(processValue);
+                    expect(
+                        await automatedProcess.processValues(
+                            recordCreator.address, 
+                            nonce
+                        )
+                    ).to.equal(processValue);
                 });
                 it("Receives process value", async () => {
                     // get ether balance of automated process contract
@@ -236,25 +242,128 @@ describe("Automated Process", () => {
     });
 
 
-    // describe("Inventory Management", () => {
-    //     describe("Set Inventory Management", () => {
-    //         describe("Success", () => {
-    //             it("Stores new Inventory Management contract", async () => {});
-    //             it("Emits SetInventoryManagement event", async () => {});
-    //         });
-    //         describe("Failure", () => {
-    //             it("Reverts when other than owner calls", async () => {});
-    //         });
-    //     });
-    //     describe("Update Stock", () => {
-    //         describe("Success", () => {
-    //             it("Updates stock on Inventory Management contract", async () => {});
-    //             it("Emits UpdatedStock event", async () => {});
-    //         });
-    //         describe("Failure", () => {
-    //             it("Reverts when other than owner calls", async () => {});
-    //             it("Reverts when Inventory Management contract not set", async () => {});
-    //         });
-    //     });
-    // });
+    describe("Inventory Management", () => {
+        describe("Set Inventory Management", () => {
+            describe("Success", () => {
+                let receipt: ContractReceipt;
+                let inventoryManagement: InventoryManagement;
+                beforeEach(async () => {
+                    // deploy inventory management contract
+                    const InventoryManagement = await ethers.getContractFactory("InventoryManagement");
+                    inventoryManagement = await InventoryManagement.deploy();
+                    // assert inventory management contract not set
+                    expect(await automatedProcess.inventoryManagement()).to.equal(ethers.constants.AddressZero);
+                    // set inventory management contract
+                    const tx = await automatedProcess.connect(owner).setInventoryManagement(
+                        inventoryManagement.address
+                    );
+                    receipt = await tx.wait();
+                });
+                it("Stores new Inventory Management contract", async () => {
+                    expect(await automatedProcess.inventoryManagement()).to.equal(inventoryManagement.address);
+                });
+                it("Emits SetInventoryManagement event", async () => {
+                    // find event
+                    const event = receipt.events?.find((event) => event.event === "SetInventoryManagement");
+                    // assert event exists
+                    expect(event).to.not.be.undefined;
+                    // assert event values, redundant to 👆🏾 but good practice
+                    expect(event?.event).to.equal("SetInventoryManagement");
+                    expect(event?.args?.inventoryManagement).to.equal(inventoryManagement.address);
+                });
+            });
+            describe("Failure", () => {
+                it("Reverts when other than owner calls", async () => {
+                    const otherThanOwner = (await ethers.getSigners())[2];
+                    await expect(
+                        automatedProcess.connect(
+                            otherThanOwner
+                        ).setInventoryManagement(
+                            ethers.constants.AddressZero
+                        )
+                    ).to.be.revertedWith("Not authorized");
+                });
+            });
+        });
+        describe("Update Stock", () => {
+            describe("Success", () => {
+                let receipt: ContractReceipt;
+                let inventoryManagement: InventoryManagement;
+                beforeEach(async () => {
+                    // deploy inventory management contract
+                    const InventoryManagement = await ethers.getContractFactory("InventoryManagement");
+                    inventoryManagement = await InventoryManagement.deploy();
+                    // set inventory management contract
+                    await automatedProcess.connect(owner).setInventoryManagement(
+                        inventoryManagement.address
+                    );
+                    // set AP contract on IM contract
+                    await inventoryManagement.connect(owner).setAutomatedProcess(automatedProcess.address);
+                    // set IM contract on AP contract
+                    await automatedProcess.connect(owner).setInventoryManagement(inventoryManagement.address);
+                    // register item
+                    await inventoryManagement.connect(owner).registerItem(
+                        item.name,
+                        item.description,
+                        item.reorderThreshold
+                    );
+                    // assert item exists
+                    const registeredItem = await inventoryManagement.items(1);
+                    expect(registeredItem.name).to.equal(item.name);
+                    // assert item has 0 quantity
+                    expect(registeredItem.quantity).to.equal(0);
+                    // update stock
+                    const tx = await automatedProcess.connect(owner).updateStock(
+                        1, // item id
+                        1, // quantity
+                        0, // inbound movement type
+                        "location",
+                        'note'
+                    );
+                    receipt = await tx.wait();
+                });
+                it("Updates stock on Inventory Management contract", async () => {
+                    const registeredItem = await inventoryManagement.items(1);
+                    expect(registeredItem.quantity).to.equal(1);
+                });
+                it("Emits UpdatedStock event", async () => {
+                    // get event
+                    const event = receipt.events?.find((event) => event.event === "UpdatedStock");
+                    // assert event exists
+                    expect(event).to.not.be.undefined;
+                    // assert event values, redundant to 👆🏾 but good practice
+                    expect(event?.event).to.equal("UpdatedStock");
+                    const args = event?.args!;
+                    expect(args.itemId).to.equal(1);
+                    expect(args.quantity).to.equal(1);
+                    expect(args.movementType).to.equal(0);
+                });
+            });
+            describe("Failure", () => {
+                it("Reverts when other than owner calls", async () => {
+                    const otherThanOwner = (await ethers.getSigners())[2];
+                    await expect(
+                        automatedProcess.connect(otherThanOwner).updateStock(
+                            1, // item id
+                            1, // quantity
+                            0, // inbound movement type
+                            "location",
+                            'note'
+                        )
+                    ).to.be.revertedWith("Not authorized");
+                });
+                it("Reverts when Inventory Management contract not set", async () => {
+                    await expect(
+                        automatedProcess.connect(owner).updateStock(
+                            1, // item id
+                            1, // quantity
+                            0, // inbound movement type
+                            "location",
+                            'note'
+                        )
+                    ).to.be.revertedWith("Inventory management not set");
+                });
+            });
+        });
+    });
 });
