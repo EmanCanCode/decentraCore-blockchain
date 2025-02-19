@@ -3,7 +3,6 @@
 pragma solidity ^0.8.24;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-
 // updated my old code from: https://github.com/EmanCanCode/Decentralized-Exchange/blob/main/src/contracts/Exchange.sol
 contract OrderBook {
     // Variables
@@ -132,7 +131,6 @@ contract OrderBook {
         return tokens[_token][user];
     }
 
-
     /// @param _tokenGet The token the user wants to get
     /// @param _amountGet The amount the user wants to get
     /// @param _tokenGive The token the user wants to give
@@ -199,6 +197,24 @@ contract OrderBook {
         );
         orderFilled[_id] = true;
     }
+
+    /**
+     * @notice Executes a trade between an order maker and an order filler.
+     * @dev This internal function transfers tokens between the order maker and the order filler while charging a fee.
+     * It deducts (_amountGet + feeAmount) of _tokenGet from the order filler (msg.sender) and credits _amountGet to the order maker.
+     * Simultaneously, it deducts _amountGive of _tokenGive from the order maker and credits that amount to the order filler.
+     * The fee, calculated as (_amountGet * feePercent / 100), is credited to the fee account.
+     * @param _orderId The unique identifier of the order being filled.
+     * @param _user The address of the order maker (the one who created the order).
+     * @param _tokenGet The address of the token that the order maker wants to receive in exchange.
+     * @param _amountGet The amount of _tokenGet that the order maker expects to receive.
+     * @param _tokenGive The address of the token that the order maker is offering to trade away.
+     * @param _amountGive The amount of _tokenGive that the order maker is willing to give in exchange.
+     * Requirements:
+     * - The order filler (msg.sender) must have at least (_amountGet + feeAmount) of _tokenGet.
+     * - The order maker (_user) must have at least _amountGive of _tokenGive.
+     * Emits a {Trade} event.
+     */
 
     function _trade(
         uint256 _orderId,

@@ -15,7 +15,8 @@
     "test-factory": "npx hardhat test test/realEstate/EscrowFactory.ts",
     "test-auto": "npx hardhat test test/supplyChain/AutomatedProcess.ts",
     "test-prov": "npx hardhat test test/supplyChain/Provenance.ts",
-    "test-inv": "npx hardhat test test/supplyChain/InventoryManagement.ts"
+    "test-inv": "npx hardhat test test/supplyChain/InventoryManagement.ts",
+    "deploy-finance": "npx hardhat run scripts/finance/deploy.ts"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^1.0.3",
@@ -43,6 +44,7 @@
     "bs58": "^5.0.0",
     "chai": "^4.3.6",
     "crypto": "^1.0.1",
+    "dotenv": "^16.4.7",
     "dsteem": "^0.11.3",
     "elliptic": "^6.5.4",
     "eosjs": "^22.1.0",
