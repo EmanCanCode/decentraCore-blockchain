@@ -20,6 +20,7 @@
     "seed-finance": "npx hardhat run scripts/finance/seed.ts",
     "deploy-realEstate": "npx hardhat run scripts/realEstate/deploy.ts",
     "deploy-supplyChain": "npx hardhat run scripts/supplyChain/deploy.ts",
+    "seed-supplyChain": "npx hardhat run scripts/supplyChain/seed.ts",
     "metadata": "npx hardhat run scripts/realEstate/metadata/metadataManager.ts"
   },
   "devDependencies": {

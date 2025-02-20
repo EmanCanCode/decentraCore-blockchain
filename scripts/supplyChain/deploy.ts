@@ -57,6 +57,12 @@ export class Deploy {
             inventoryManagement.address,
             provenance.address
         );
+
+        return {
+            automatedProcess: automatedProcess.address,
+            inventoryManagement: inventoryManagement.address,
+            provenance: provenance.address
+        }
     }
 
     // need to put the deployedContracts in ../../logs/finance/deploy.json

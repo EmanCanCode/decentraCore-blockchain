@@ -107,6 +107,11 @@ export class Deploy {
         console.log("EscrowFactory deployed to:", escrowFactory.address);
 
         this.saveDeployedContracts(realEstate.address, escrowFactory.address);
+
+        return {
+            realEstate: realEstate.address,
+            escrowFactory: escrowFactory.address
+        };
     }
 
     private saveDeployedContracts(

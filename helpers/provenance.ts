@@ -50,13 +50,13 @@ export const productRecords: ProductRecord[] = [
         additionalInfo: toEvenHex("First apple")
     },
     {
-        productName: "Apple",
-        variety: "Yellow Delicious",  
+        productName: "Cherry",
+        variety: "Bing",  
         productType: "Fruit",
         timestamp: 1631779204,
         location: "0x000000",
         state: State.Created,
-        additionalInfo: toEvenHex("Second apple")
+        additionalInfo: toEvenHex("Cherry cherry")
     },
     {
         productName: "Banana",

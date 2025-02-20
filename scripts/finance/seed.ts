@@ -1,7 +1,7 @@
 import { ethers } from "hardhat";
 import { JsonRpcProvider } from "@ethersproject/providers";
 import dotenv from 'dotenv';
-import { BigNumber, Wallet } from "ethers";
+import { Wallet } from "ethers";
 import { DeployedContracts } from "./interfaces";
 dotenv.config();
 
@@ -16,11 +16,8 @@ export class Seed {
             throw new Error("PROVIDER_URL is not set");
         } else if (!process.env.DEPLOYER_PRIVATE_KEY) {
             throw new Error("DEPLOYER_PRIVATE_KEY is not set");
-        }
-        this.provider = new ethers.providers.JsonRpcProvider(process.env.PROVIDER_URL);
-        this.deployer = new ethers.Wallet(process.env.DEPLOYER_PRIVATE_KEY, this.provider);
-        // ensure seeders are set
-        if (
+        } else if (
+            // ensure seeders are set
             !process.env.SEEDER1_PRIVATE_KEY ||
             !process.env.SEEDER2_PRIVATE_KEY ||
             !process.env.SEEDER3_PRIVATE_KEY ||
@@ -29,7 +26,10 @@ export class Seed {
         ) {
             throw new Error("SEEDER_PRIVATE_KEY is not set");
         }
-        // add seeders
+        // initialize provider and deployer
+        this.provider = new ethers.providers.JsonRpcProvider(process.env.PROVIDER_URL);
+        this.deployer = new ethers.Wallet(process.env.DEPLOYER_PRIVATE_KEY, this.provider);
+        // initialize seeders
         this.seeders = [
             new ethers.Wallet(
                 process.env.SEEDER1_PRIVATE_KEY,
