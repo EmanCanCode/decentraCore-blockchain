@@ -1,0 +1,19 @@
+{
+  "name": "1 Grand Avenue, Beverly Hills, CA 90210",
+  "description": "A palatial luxury estate with grand architecture, featuring expansive semi-circular balconies, lush landscaping, and timeless elegance. This stately residence offers unparalleled sophistication and sweeping views.",
+  "image": "http://127.0.0.1:3001/realEstate/luxury/mainImage/image1.webp",
+  "otherImages": [
+    "http://127.0.0.1:3001/realEstate/luxury/otherImages/image1.webp",
+    "http://127.0.0.1:3001/realEstate/luxury/otherImages/image2.webp",
+    "http://127.0.0.1:3001/realEstate/luxury/otherImages/image3.webp",
+    "http://127.0.0.1:3001/realEstate/luxury/otherImages/image4.webp"
+  ],
+  "attributes": {
+    "Bedrooms": 6,
+    "Bathrooms": 7.5,
+    "SquareFeet": 10000,
+    "YearBuilt": 2010,
+    "Location": "Beverly Hills, CA",
+    "Property Type": "Luxury Home"
+  }
+}

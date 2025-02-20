@@ -1,0 +1,19 @@
+{
+  "name": "456 Oak Avenue, Springfield, IL 62704",
+  "description": "Elegant home with an updated kitchen and hardwood floors, perfect for comfortable family living.",
+  "image": "http://127.0.0.1:3001/realEstate/singleFamily/mainImage/image2.webp",
+  "otherImages": [
+    "http://127.0.0.1:3001/realEstate/singleFamily/otherImages/image1.webp",
+    "http://127.0.0.1:3001/realEstate/singleFamily/otherImages/image2.webp",
+    "http://127.0.0.1:3001/realEstate/singleFamily/otherImages/image3.webp",
+    "http://127.0.0.1:3001/realEstate/singleFamily/otherImages/image4.webp"
+  ],
+  "attributes": {
+    "Bedrooms": 3,
+    "Bathrooms": 2,
+    "SquareFeet": 2200,
+    "YearBuilt": 1985,
+    "Location": "Springfield, IL",
+    "Property Type": "Single-Family Home"
+  }
+}

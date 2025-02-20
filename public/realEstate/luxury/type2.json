@@ -1,0 +1,19 @@
+{
+  "name": "250 Modern Vista, Miami, FL 33139",
+  "description": "A sleek and contemporary luxury residence boasting cutting-edge design and premium finishes. This ultra-modern home offers spectacular ocean views and state-of-the-art amenities, ideal for high-end living.",
+  "image": "http://127.0.0.1:3001/realEstate/luxury/mainImage/image2.webp",
+  "otherImages": [
+    "http://127.0.0.1:3001/realEstate/luxury/otherImages/image1.webp",
+    "http://127.0.0.1:3001/realEstate/luxury/otherImages/image2.webp",
+    "http://127.0.0.1:3001/realEstate/luxury/otherImages/image3.webp",
+    "http://127.0.0.1:3001/realEstate/luxury/otherImages/image4.webp"
+  ],
+  "attributes": {
+    "Bedrooms": 5,
+    "Bathrooms": 6,
+    "SquareFeet": 9000,
+    "YearBuilt": 2018,
+    "Location": "Miami, FL",
+    "Property Type": "Luxury Home"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "name": "201 Central Park West, Apartment 101, New York, NY 10023",
+  "description": "Modern apartment unit featuring floor-to-ceiling windows with views of Central Park. This 2-bedroom, 2-bath unit offers a spacious living area and contemporary finishes.",
+  "image": "http://127.0.0.1:3001/realEstate/multiFamily/mainImage/image2.webp",
+  "otherImages": [
+    "http://127.0.0.1:3001/realEstate/multiFamily/otherImages/image1.webp",
+    "http://127.0.0.1:3001/realEstate/multiFamily/otherImages/image2.webp",
+    "http://127.0.0.1:3001/realEstate/multiFamily/otherImages/image3.webp",
+    "http://127.0.0.1:3001/realEstate/multiFamily/otherImages/image4.webp"
+  ],
+  "attributes": {
+    "Bedrooms": 2,
+    "Bathrooms": 2,
+    "SquareFeet": 1100,
+    "YearBuilt": 2018,
+    "Location": "New York, NY",
+    "Property Type": "Apartment Unit"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "name": "350 Tropical Estate, Key West, FL 33040",
+  "description": "A distinctive luxury retreat with a tropical ambiance, blending Cuban-inspired architecture with warm, clay-toned accents. This exquisite property captures the relaxed yet sophisticated vibe of Florida's paradise.",
+  "image": "http://127.0.0.1:3001/realEstate/luxury/mainImage/image3.webp",
+  "otherImages": [
+    "http://127.0.0.1:3001/realEstate/luxury/otherImages/image1.webp",
+    "http://127.0.0.1:3001/realEstate/luxury/otherImages/image2.webp",
+    "http://127.0.0.1:3001/realEstate/luxury/otherImages/image3.webp",
+    "http://127.0.0.1:3001/realEstate/luxury/otherImages/image4.webp"
+  ],
+  "attributes": {
+    "Bedrooms": 4,
+    "Bathrooms": 5,
+    "SquareFeet": 7500,
+    "YearBuilt": 2015,
+    "Location": "Key West, FL",
+    "Property Type": "Luxury Home"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "name": "789 Pine Road, Springfield, IL 62704",
+  "description": "Cozy single-family home featuring a beautiful garden, ample parking space, and a welcoming ambiance.",
+  "image": "http://127.0.0.1:3001/realEstate/singleFamily/mainImage/image3.webp",
+  "otherImages": [
+    "http://127.0.0.1:3001/realEstate/singleFamily/otherImages/image1.webp",
+    "http://127.0.0.1:3001/realEstate/singleFamily/otherImages/image2.webp",
+    "http://127.0.0.1:3001/realEstate/singleFamily/otherImages/image3.webp",
+    "http://127.0.0.1:3001/realEstate/singleFamily/otherImages/image4.webp"
+  ],
+  "attributes": {
+    "Bedrooms": 4,
+    "Bathrooms": 3,
+    "SquareFeet": 2600,
+    "YearBuilt": 2000,
+    "Location": "Springfield, IL",
+    "Property Type": "Single-Family Home"
+  }
+}

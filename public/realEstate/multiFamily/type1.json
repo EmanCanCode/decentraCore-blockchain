@@ -1,0 +1,20 @@
+{
+  "name": "101 First Avenue Duplex, Springfield, IL 62704",
+  "description": "A well-maintained duplex offering two separate living units in a prime suburban location, ideal for families or as an investment property.",
+  "image": "http://127.0.0.1:3001/realEstate/multiFamily/mainImage/image1.webp",
+  "otherImages": [
+    "http://127.0.0.1:3001/realEstate/multiFamily/otherImages/image1.webp",
+    "http://127.0.0.1:3001/realEstate/multiFamily/otherImages/image2.webp",
+    "http://127.0.0.1:3001/realEstate/multiFamily/otherImages/image3.webp",
+    "http://127.0.0.1:3001/realEstate/multiFamily/otherImages/image4.webp"
+  ],
+  "attributes": {
+    "Units": 2,
+    "Average Bedrooms": 2,
+    "Average Bathrooms": 1,
+    "Total SquareFeet": 1800,
+    "YearBuilt": 1995,
+    "Location": "Springfield, IL",
+    "Property Type": "Duplex"
+  }
+}

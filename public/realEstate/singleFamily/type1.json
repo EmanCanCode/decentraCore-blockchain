@@ -1,0 +1,19 @@
+{
+  "name": "123 Maple Street, Springfield, IL 62704",
+  "description": "Charming single-family home featuring modern amenities, a spacious backyard, and a cozy living space.",
+  "image": "http://127.0.0.1:3001/realEstate/singleFamily/mainImage/image1.webp",
+  "otherImages": [
+    "http://127.0.0.1:3001/realEstate/singleFamily/otherImages/image1.webp",
+    "http://127.0.0.1:3001/realEstate/singleFamily/otherImages/image2.webp",
+    "http://127.0.0.1:3001/realEstate/singleFamily/otherImages/image3.webp",
+    "http://127.0.0.1:3001/realEstate/singleFamily/otherImages/image4.webp"
+  ],
+  "attributes": {
+    "Bedrooms": 4,
+    "Bathrooms": 2.5,
+    "SquareFeet": 2800,
+    "YearBuilt": 1990,
+    "Location": "Springfield, IL",
+    "Property Type": "Single-Family Home"
+  }
+}

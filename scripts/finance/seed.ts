@@ -42,7 +42,7 @@ export class Seed {
             new ethers.Wallet(
                 process.env.SEEDER3_PRIVATE_KEY,
                 this.provider
-            ), 
+            ),
             new ethers.Wallet(
                 process.env.SEEDER4_PRIVATE_KEY,
                 this.provider
@@ -55,7 +55,7 @@ export class Seed {
     }
 
 
-    async main (
+    async main(
         contracts: DeployedContracts
     ) {
         const keys = Object.keys(contracts);
@@ -105,7 +105,7 @@ export class Seed {
                 // trade random amount of tokenA for tokenB
                 await cpamm.connect(this.seeders[i]).swap(
                     tokenA.address,
-                    random  
+                    random
                 );
 
                 // trade random amount of tokenB for tokenA
@@ -146,7 +146,7 @@ export class Seed {
                 // trade random amount of tokenA for tokenB
                 await csamm.connect(this.seeders[i]).swap(
                     tokenA.address,
-                    random  
+                    random
                 );
 
                 // trade random amount of tokenB for tokenA
@@ -194,13 +194,14 @@ export class Seed {
             let seederBalance = await obmm.tokens(tokenA.address, this.seeders[0].address);
             for (let i = 0; i < 5; i++) {
                 // every iteration the amount of eth they're asking for should be 1% more than the previous iteration
-                let price = ethers.utils.parseEther((1 + i/100).toString());
+                let price = ethers.utils.parseEther((1 + i / 100).toString());
                 await obmm.connect(this.seeders[0]).makeOrder(
                     ethAddr,
                     price,
                     tokenA.address,
                     seederBalance.div(5) // they should make order 1/5 of their balance every time (use whole balance)
                 );
+                await this.wait(1); // wait 1 second
             }
 
 
@@ -208,13 +209,14 @@ export class Seed {
             seederBalance = await obmm.tokens(tokenB.address, this.seeders[1].address);
             for (let i = 0; i < 5; i++) {
                 // every iteration the amount of eth they're asking for should be 1% more than the previous iteration
-                let price = ethers.utils.parseEther((1 + i/100).toString());
+                let price = ethers.utils.parseEther((1 + i / 100).toString());
                 await obmm.connect(this.seeders[1]).makeOrder(
                     ethAddr,
                     price,
                     tokenB.address,
                     seederBalance.div(5) // they should make order 1/5 of their balance every time (use whole balance)
                 );
+                await this.wait(1); // wait 1 second
             }
 
 
@@ -222,13 +224,14 @@ export class Seed {
             seederBalance = await obmm.tokens(tokenA.address, this.seeders[2].address);
             for (let i = 0; i < 5; i++) {
                 // every iteration the amount of tokenB they're asking for should be 1% more than the previous iteration
-                let price = ethers.utils.parseEther((1.3 + i/100).toString());
+                let price = ethers.utils.parseEther((1.3 + i / 100).toString());
                 await obmm.connect(this.seeders[2]).makeOrder(
                     tokenB.address,
                     price,
                     tokenA.address,
                     seederBalance.div(5) // they should make order 1/5 of their balance every time (use whole balance)
                 );
+                await this.wait(1); // wait 1 second
             }
 
             // seeder 4 fills some orders
@@ -245,8 +248,9 @@ export class Seed {
             const ordersToFill = [1, 2, 6, 7, 11, 12];
             for (let order of ordersToFill) {
                 await obmm.connect(this.seeders[3]).fillOrder(order);
+                await this.wait(1); // wait 1 second
             }
-            
+
             // seeder 5 makes multiple orders - cancels all orders
             // make order 
             await obmm.connect(this.seeders[4]).makeOrder(
@@ -255,19 +259,30 @@ export class Seed {
                 tokenA.address,
                 ethers.utils.parseEther('100')
             );
+            await this.wait(1); // wait 1 second
             const orderIdToCancel = await obmm.orderCount();
             // cancel order
             await obmm.connect(this.seeders[4]).cancelOrder(orderIdToCancel);
         }
+    }
+
+    async wait(seconds: number) {
+        return new Promise((resolve) => {
+            setTimeout(resolve, seconds * 1000);
+        });
     }
 }
 
 const seed = new Seed();
 
 seed.main({
-    // pass in the deployed contracts here
+    "Eman Token 1": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
+    "Eman Token 2": "0x0165878A594ca255338adfa4d48449f69242Eb8F",
+    "CPAMM": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+    "CSAMM": "0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6",
+    "OBMM": "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318"
 }).then(() => {
-    console.log("Seed completed"); 
+    console.log("Seed completed");
     process.exit(0);
 }).catch((error) => {
     console.error(error);
