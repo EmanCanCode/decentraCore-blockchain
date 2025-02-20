@@ -18,6 +18,8 @@
     "test-inv": "npx hardhat test test/supplyChain/InventoryManagement.ts",
     "deploy-finance": "npx hardhat run scripts/finance/deploy.ts",
     "seed-finance": "npx hardhat run scripts/finance/seed.ts",
+    "deploy-realEstate": "npx hardhat run scripts/realEstate/deploy.ts",
+    "deploy-supplyChain": "npx hardhat run scripts/supplyChain/deploy.ts",
     "metadata": "npx hardhat run scripts/realEstate/metadata/metadataManager.ts"
   },
   "devDependencies": {
