@@ -21,7 +21,8 @@
     "deploy-realEstate": "npx hardhat run scripts/realEstate/deploy.ts",
     "deploy-supplyChain": "npx hardhat run scripts/supplyChain/deploy.ts",
     "seed-supplyChain": "npx hardhat run scripts/supplyChain/seed.ts",
-    "metadata": "npx hardhat run scripts/realEstate/metadata/metadataManager.ts"
+    "metadata": "npx hardhat run scripts/realEstate/metadata/metadataManager.ts",
+    "listen": "npx hardhat run listeners/manager.ts"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^1.0.3",
@@ -54,6 +55,7 @@
     "express": "^4.21.2",
     "hardhat-gas-reporter": "^1.0.9",
     "keccak": "^3.0.4",
+    "mongo": "^0.1.0",
     "nodemon": "^2.0.21",
     "secp256k1": "^5.0.0",
     "sha256": "^0.2.0",

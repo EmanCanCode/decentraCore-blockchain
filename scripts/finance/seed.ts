@@ -80,9 +80,9 @@ export class Seed {
         }
 
         // if CPAMM is deployed, seed it
-        if (contracts.cpamm) {
+        if (contracts.CPAMM) {
             // create cpamm instance
-            const cpamm = await ethers.getContractAt("ConstantProduct", contracts.cpamm, this.deployer);
+            const cpamm = await ethers.getContractAt("ConstantProduct", contracts.CPAMM, this.deployer);
             // deployer adds liquidity. should be fine since deployer has started with 1 trillion tokens
             const oneBillionTokens = ethers.utils.parseEther('1000000000');
             await tokenA.connect(this.deployer).approve(cpamm.address, oneBillionTokens);
@@ -91,9 +91,6 @@ export class Seed {
                 oneBillionTokens,
                 oneBillionTokens
             );
-            console.log("Liquidity added to CPAMM \n");
-            console.log("CPAMM - Token A reserves: ", (await cpamm.reserveA()).toString() + '\n');
-            console.log("CPAMM - Token B reserves: ", (await cpamm.reserveB()).toString() + '\n');
 
             // seeders make swaps
             for (let i = 0; i < this.seeders.length; i++) {
@@ -102,28 +99,34 @@ export class Seed {
                     Math.floor(Math.random() * 250000).toString()
                 ); // 250000 is 1/4 of one million
                 await tokenA.connect(this.seeders[i]).approve(cpamm.address, random);
+            
                 // trade random amount of tokenA for tokenB
                 await cpamm.connect(this.seeders[i]).swap(
                     tokenA.address,
                     random
                 );
-
+                // wait 1 second
+                await this.wait(1.5);
                 // trade random amount of tokenB for tokenA
                 random = ethers.utils.parseEther(
                     Math.floor(Math.random() * 250000).toString()
                 );
                 await tokenB.connect(this.seeders[i]).approve(cpamm.address, random);
+                
                 await cpamm.connect(this.seeders[i]).swap(
                     tokenB.address,
                     random
                 );
+                // wait 1 second
+                await this.wait(1.5);
             }
+
         }
 
         // if CSAMM is deployed, seed it
-        if (contracts.csamm) {
+        if (contracts.CSAMM) {
             // create csamm instance
-            const csamm = await ethers.getContractAt("ConstantSum", contracts.csamm, this.deployer);
+            const csamm = await ethers.getContractAt("ConstantSum", contracts.CSAMM, this.deployer);
             // deployer adds liquidity. should be fine since deployer has started with 1 trillion tokens
             const oneBillionTokens = ethers.utils.parseEther('1000000000');
             await tokenA.connect(this.deployer).approve(csamm.address, oneBillionTokens);
@@ -148,6 +151,8 @@ export class Seed {
                     tokenA.address,
                     random
                 );
+                // wait 1 second
+                await this.wait(1.5); 
 
                 // trade random amount of tokenB for tokenA
                 random = ethers.utils.parseEther(
@@ -158,14 +163,16 @@ export class Seed {
                     tokenB.address,
                     random
                 );
+                // wait 1 second
+                await this.wait(1.5);
             }
         }
 
         // if OBMM is deployed, seed it
-        if (contracts.obmm) {
+        if (contracts.OBMM) {
             // create obmm instance
-            const obmm = await ethers.getContractAt("OrderBook", contracts.obmm, this.deployer);
-
+            const obmm = await ethers.getContractAt("OrderBook", contracts.OBMM, this.deployer);
+            
             // deposits
             for (let i = 0; i < this.seeders.length; i++) {
                 // deposit ether
@@ -201,7 +208,7 @@ export class Seed {
                     tokenA.address,
                     seederBalance.div(5) // they should make order 1/5 of their balance every time (use whole balance)
                 );
-                await this.wait(1); // wait 1 second
+                await this.wait(1.5); // wait 1 second
             }
 
 
@@ -216,7 +223,7 @@ export class Seed {
                     tokenB.address,
                     seederBalance.div(5) // they should make order 1/5 of their balance every time (use whole balance)
                 );
-                await this.wait(1); // wait 1 second
+                await this.wait(1.5); // wait 1 second
             }
 
 
@@ -231,7 +238,7 @@ export class Seed {
                     tokenA.address,
                     seederBalance.div(5) // they should make order 1/5 of their balance every time (use whole balance)
                 );
-                await this.wait(1); // wait 1 second
+                await this.wait(1.5); // wait 1 second
             }
 
             // seeder 4 fills some orders
@@ -248,7 +255,7 @@ export class Seed {
             const ordersToFill = [1, 2, 6, 7, 11, 12];
             for (let order of ordersToFill) {
                 await obmm.connect(this.seeders[3]).fillOrder(order);
-                await this.wait(1); // wait 1 second
+                await this.wait(1.5); // wait 1 second
             }
 
             // seeder 5 makes multiple orders - cancels all orders
@@ -259,7 +266,7 @@ export class Seed {
                 tokenA.address,
                 ethers.utils.parseEther('100')
             );
-            await this.wait(1); // wait 1 second
+            await this.wait(1.5); // wait 1 second
             const orderIdToCancel = await obmm.orderCount();
             // cancel order
             await obmm.connect(this.seeders[4]).cancelOrder(orderIdToCancel);
@@ -276,12 +283,12 @@ export class Seed {
 const seed = new Seed();
 
 seed.main({
-    "Eman Token 1": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
-    "Eman Token 2": "0x0165878A594ca255338adfa4d48449f69242Eb8F",
-    "CPAMM": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
-    "CSAMM": "0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6",
-    "OBMM": "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318"
-}).then(() => {
+    "Eman Token 1": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+    "Eman Token 2": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+    "CPAMM": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+    "CSAMM": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+    "OBMM": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9"
+  }).then(() => {
     console.log("Seed completed");
     process.exit(0);
 }).catch((error) => {

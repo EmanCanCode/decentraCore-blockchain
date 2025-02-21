@@ -86,6 +86,7 @@ export class Seed {
                 { value: ethers.utils.parseEther(`0.${i + 1}`) }
             );
 
+            await this.wait(1.5);
             // leave first product in created state
             // if on second product, update to in transit
             if (i == 1) {
@@ -101,6 +102,7 @@ export class Seed {
                     State.InTransit, // state
                     "First update" // note
                 );
+                await this.wait(1.5);
             } else if (i == 2) { // if on third product, update to completed
                 await provenance.connect(
                     this.seeders[i]
@@ -114,18 +116,25 @@ export class Seed {
                     State.Completed, // state
                     "Final update" // note
                 );
+                await this.wait(1.5);
             }
 
             console.log(`Record ${i + 1} created and updated`);
         }
     }
 
+    async wait(seconds: number) {
+        return new Promise(resolve => {
+            setTimeout(resolve, seconds * 1000);
+        });
+    }
+
 }
 
 const seed = new Seed();
 seed.main(
-    '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512', // inventoryManagementAddress
-    '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0' // provenanceAddress
+    '0x0165878A594ca255338adfa4d48449f69242Eb8F', // inventoryManagementAddress
+    '0xa513E6E4b8f2a923D98304ec87F64353C4D5C853' // provenanceAddress
 ).then(() => {
     console.log("Seed complete");
     process.exit(0);
@@ -137,18 +146,18 @@ seed.main(
 
 export const items = [
     {
-        name: "Apple",
-        description: "Granny Smith",
+        name: "Precision Bearings",
+        description: "High-grade bearings for industrial machinery",
         reorderThreshold: 20
     },
     {
-        name: "Banana",
-        description: "Cavendish",
+        name: "Semiconductor Wafers",
+        description: "Silicon wafers for chip fabrication",
         reorderThreshold: 35
     },
     {
-        name: "Cherry",
-        description: "Bing",
+        name: "Polypropylene Pellets",
+        description: "Versatile plastic pellets for molding applications",
         reorderThreshold: 30
     }
 ];

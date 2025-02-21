@@ -43,13 +43,17 @@ export class Deploy {
         const token1 = await Token.deploy("Eman Token 1", "EMAN1", ethers.utils.parseEther('1000000000000')); // 1 trillion tokens
         await token1.deployed();
         deployedContracts["Eman Token 1"] = token1.address;
-        console.log("Eman Token 1 deployed to:", token1.address);
-
+        // make  console.log("Eman Token 1 deployed to:", token1.address); in a table
+        
+        
         // deploy token2
         const token2 = await Token.deploy("Eman Token 2", "EMAN2", ethers.utils.parseEther('1000000000000')); // 1 trillion tokens
         await token2.deployed();
         deployedContracts["Eman Token 2"] = token2.address;
-        console.log("Eman Token 2 deployed to:", token2.address);
+        console.table({
+            "Eman Token 1": token1.address,
+            "Eman Token 2": token2.address
+        })
 
         if (contractsToDeploy.cpamm) {
             // deploy cpamm
@@ -60,7 +64,9 @@ export class Deploy {
             );
             await cpamm.deployed();
             deployedContracts["CPAMM"] = cpamm.address;
-            console.log("CPAMM deployed to:", cpamm.address);
+            console.table({
+                "CPAMM": cpamm.address
+            });
         }
 
         if (contractsToDeploy.csamm) {
@@ -72,7 +78,9 @@ export class Deploy {
             );
             await csamm.deployed();
             deployedContracts["CSAMM"] = csamm.address;
-            console.log("CSAMM deployed to:", csamm.address);
+            console.table({
+                "CSAMM": csamm.address
+            });
         }
 
         if (contractsToDeploy.obmm) {
@@ -84,7 +92,9 @@ export class Deploy {
             );
             await obmm.deployed();
             deployedContracts["OBMM"] = obmm.address;
-            console.log("OBMM deployed to:", obmm.address);
+            console.table({
+                "OBMM": obmm.address
+            });
         }
 
         // save deployed contracts
