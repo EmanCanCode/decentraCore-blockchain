@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 import { FinanceDocument, FinanceType, InventoryManagementDocumentBase, ProvenanceDocumentBase, SupplyChainDocument, SupplyChainType } from './interfaces';
 dotenv.config();
 
-
+// todo make a singleton to keep a connection to the database
 export class Mongo {
     client: MongoClient;
     db: Db;

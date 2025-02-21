@@ -83,7 +83,7 @@ export class Seed {
                 product.location,
                 product.state, 
                 product.additionalInfo,
-                { value: ethers.utils.parseEther(`0.${i + 1}`) }
+                { value: ethers.utils.parseEther(`${i + 1}`) }
             );
 
             await this.wait(1.5);

@@ -1,3 +1,4 @@
+import { Mongo } from "./database/mongo";
 import { CpammListener } from "./finance/cpamm";
 import { CsammListener } from "./finance/csamm";
 import { ObmmListener } from "./finance/obmm";
@@ -45,6 +46,10 @@ manager.initialize(
     '0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9', // OBMM contract address
     '0xa513E6E4b8f2a923D98304ec87F64353C4D5C853', // Provenance contract address
 ).then(async () => {
+    const mongo = new Mongo();
+    // initialize database
+    await mongo.initialize();
+    // start
     manager.listen();
     console.log("Listeners initialized and listening...");
 }).catch(err => {

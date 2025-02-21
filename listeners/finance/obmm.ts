@@ -76,7 +76,7 @@ export class ObmmListener {
             await this.mongo.updateFinance(
                 "OBMM",
                 toReadableAmount(volume),
-                Number(Number(ethers.utils.formatUnits(fees, 18)).toFixed(6)), // im sure theres a less headachy way to do this. been coding for a while now so i am just going to do this
+                toReadableAmount(fees), // im sure theres a less headachy way to do this. been coding for a while now so i am just going to do this
                 false,
                 true
             ).catch(error => {

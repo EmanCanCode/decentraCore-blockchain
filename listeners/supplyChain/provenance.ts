@@ -6,6 +6,7 @@ import { Mongo } from '../database/mongo';
 import { toReadableAmount } from '../helpers';
 import dotenv from 'dotenv';
 import { ProvenanceDocumentBase } from '../database/interfaces';
+import { decodeProductId } from '../../helpers/provenance';
 dotenv.config();
 
 export class ProvenanceListener {
@@ -60,7 +61,7 @@ export class ProvenanceListener {
                 'type': 'Provenance',
                 totalRecords: 1,
                 completedRecords: 0,
-                totalValueProcessed:  Number(Number(ethers.utils.formatUnits(value, 18)).toFixed(2))
+                totalValueProcessed:  toReadableAmount(value)
 
             };
             await this.mongo.updateSupplyChain(document).catch(error => {
@@ -102,6 +103,21 @@ export class ProvenanceListener {
                 console.error("Error updating supplyChain document:", error);
             });
             console.log("Provenance document updated");
+
+            // release process value to the creator
+            const { creator, nonce } = decodeProductId(productId);
+            const automatedProcess = await ethers.getContractAt(
+                "AutomatedProcess",
+                await this.provenance!.automatedProcess(),
+                this.deployer
+            );
+            await automatedProcess.connect(this.deployer).releaseProcessValue(
+                nonce,
+                creator
+            ).catch(error => {
+                console.error("Error releasing process value:", error);
+            });
+            console.log("Process value released");
         });
     }
 

@@ -41,31 +41,31 @@ export function encodeProductId(creator: string, nonce: number) {
 
 export const productRecords: ProductRecord[] = [
     {
-        productName: "Apple",
-        variety: "Granny Smith",
-        productType: "Fruit",
+        productName: "Precision Bearings",
+        variety: "High-grade bearings for industrial machinery",
+        productType: "Industrial",
         timestamp: 1631779200,
         location: "0x000000",
         state: State.Created,
-        additionalInfo: toEvenHex("First apple")
+        additionalInfo: toEvenHex("Precision bearings")
     },
     {
-        productName: "Cherry",
-        variety: "Bing",  
-        productType: "Fruit",
+        productName: "Semiconductor Wafers",
+        variety: "Silicon wafers for chip fabrication",
+        productType: "Industrial",
         timestamp: 1631779204,
         location: "0x000000",
         state: State.Created,
-        additionalInfo: toEvenHex("Cherry cherry")
+        additionalInfo: toEvenHex("Semi wafers")
     },
     {
-        productName: "Banana",
-        variety: "Cavendish",  
-        productType: "Fruit",
+        productName: "Polypropylene Pellets",
+        variety: "Versatile plastic pellets for molding applications",
+        productType: "Industrial",
         timestamp: 1631779207,
         location: "0x000000",
         state: State.Created,
-        additionalInfo: toEvenHex("Sweet banana")
+        additionalInfo: toEvenHex("pellets")
     },
 ];
 
