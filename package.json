@@ -22,7 +22,8 @@
     "deploy-supplyChain": "npx hardhat run scripts/supplyChain/deploy.ts",
     "seed-supplyChain": "npx hardhat run scripts/supplyChain/seed.ts",
     "metadata": "npx hardhat run scripts/realEstate/metadata/metadataManager.ts",
-    "listen": "npx hardhat run listeners/manager.ts"
+    "listen": "npx hardhat run listeners/manager.ts",
+    "deploy": "npm run deploy-finance && npm run deploy-supplyChain && npm run deploy-realEstate"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^1.0.3",

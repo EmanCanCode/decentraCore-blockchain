@@ -1,6 +1,6 @@
 import { Db, MongoClient } from 'mongodb';
 import dotenv from 'dotenv';
-import { FinanceDocument, FinanceType, InventoryManagementDocumentBase, ProvenanceDocumentBase, SupplyChainDocument, SupplyChainType } from './interfaces';
+import { FinanceDocument, FinanceType, InventoryManagementDocumentBase, ProvenanceDocumentBase, RealEstateDocument, SupplyChainDocument, SupplyChainType } from './interfaces';
 dotenv.config();
 
 // todo make a singleton to keep a connection to the database
@@ -62,6 +62,9 @@ export class Mongo {
             console.log("SupplyChain collection created");
 
             // create realEstate collection
+            await this.db.createCollection<RealEstateDocument>('realEstate');
+            console.log("RealEstate collection created");
+
         } catch (error) {
             console.error("Error initializing database:", error);
         } finally {
@@ -158,7 +161,7 @@ export class Mongo {
                 // you will have to pass all the data to update the document. put 0 if the data property is not applicable
                 if (data.completedRecords) document.completedRecords++;  
                 if (data.totalRecords) document.totalRecords++;
-                if (data.totalValueProcessed) document.totalValueProcessed++;
+                if (data.totalValueProcessed) document.totalValueProcessed += data.totalValueProcessed;
             } else if (
                 this.isInventoryManagementDocument(document) &&
                 this.isInventoryManagementDocument(data)
@@ -184,6 +187,53 @@ export class Mongo {
             await this.close();
         }
     }
+
+
+    async updateRealEstate(data: Partial<RealEstateDocument>, toBeDeleted?: boolean) {
+        if (!data.buyer) { // either case we need the buyer - to add or delete
+            throw new Error("RealEstate document requires a buyer");
+        } if (!data.escrowId && !toBeDeleted) { // if toBeDeleted is false, then we need the escrowId to add the document
+            throw new Error("RealEstate document requires an escrowId");
+        }
+        
+        try {
+            await this.connect();
+            // determine if realEstate collection exists
+            const collections = await this.db.collections();
+            if (!collections.map(c => c.collectionName).includes('realEstate')) {
+                console.error("RealEstate collection does not exist");
+                return;
+            }
+
+            // if real estate document exists, throw error
+            const realEstateCollection = this.db.collection<RealEstateDocument>('realEstate');
+            let realEstateDocument = await realEstateCollection.findOne({ buyer: data.buyer });
+            if (realEstateDocument && !toBeDeleted) { // if document exists and we are not deleting
+                throw new Error("RealEstate document already exists");
+            } else if (!realEstateDocument && toBeDeleted) {  // if there is no document and we are to delete it
+                throw new Error("RealEstate document does not exist");
+            }
+
+            // if deleting, delete the document
+            if (toBeDeleted) {
+                await realEstateCollection.deleteOne({ buyer: data.buyer });
+                console.log("RealEstate document deleted");
+                return;
+            }
+
+            // create realEstate document
+            await realEstateCollection.insertOne(
+                data as RealEstateDocument // i couldve type guarded this like the bottom functions buttttttt
+            );
+            console.log("RealEstate document created");
+
+        } catch (error) {
+            console.error("Error updating realEstate:", error);
+        } finally {
+            await this.close();
+        }
+    }
+
 
     isProvenanceDocument(data: SupplyChainDocument): data is ProvenanceDocumentBase {
         return data.type == 'Provenance';

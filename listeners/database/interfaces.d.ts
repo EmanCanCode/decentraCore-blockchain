@@ -34,3 +34,11 @@ export interface SupplyChainDocument extends
     Partial<ProvenanceDocumentBase>, Partial<InventoryManagementDocumentBase> {
     type: SupplyChainType;
 }
+
+
+// we are only storing the buyer and the escrow address
+export interface RealEstateDocument {
+    _id?: ObjectId;
+    buyer: string; // address of the buyer
+    escrowId: string; // id of the escrow
+}
