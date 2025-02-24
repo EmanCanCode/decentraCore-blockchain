@@ -61,7 +61,7 @@ export class Deploy {
             ],
             "0x"
         );
-        console.log("Minted Single-Family Homes: IDs 1,2,3 to seeder1");
+        console.log("Minted Single-Family Homes: IDs 1, 2, 3 to seeder1");
 
         // Multi-Family Homes (IDs 4, 5, 6)
         await realEstate.connect(this.deployer).mintBatch(
@@ -110,6 +110,12 @@ export class Deploy {
         console.table({
             "EscrowFactory deployed to": escrowFactory.address
         }); 
+
+        // seeders have to give escrow factory contract approval to spend their tokens
+        for (let seeder of this.seeders) {
+            await realEstate.connect(seeder).setApprovalForAll(escrowFactory.address, true);
+            console.log(`Seeder ${this.seeders.indexOf(seeder) + 1} approved EscrowFactory to spend their tokens`);
+        }
 
         this.saveDeployedContracts(realEstate.address, escrowFactory.address);
 

@@ -151,6 +151,11 @@ Each module is designed to be deployed independently. The contracts have been de
     ```bash
         PROVIDER_URL=http://127.0.0.1:8545 # this would be if its local
         DEPLOYER_PRIVATE_KEY=0xabc123...   # private key of deployer
+        SEEDER1_PRIVATE_KEY=0xabc123...   # private key of seeder 1
+        SEEDER2_PRIVATE_KEY=0xabc123...   # private key of seeder 2
+        SEEDER3_PRIVATE_KEY=0xabc123...   # private key of seeder 3
+        SEEDER4_PRIVATE_KEY=0xabc123...   # private key of seeder 4
+        SEEDER5_PRIVATE_KEY=0xabc123...   # private key of seeder 5
     ```
 4. Deploy to your local network with:
    ```bash
