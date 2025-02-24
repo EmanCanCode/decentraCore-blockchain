@@ -2,7 +2,7 @@ import { ethers } from 'hardhat';
 import { InventoryManagement } from '../../typechain-types';
 import { WebSocketProvider } from '@ethersproject/providers';
 import { BigNumber, Wallet } from 'ethers';
-import { Mongo } from '../database/mongo';
+import mongo from '../database/mongo';
 import { toReadableAmount } from '../helpers';
 import dotenv from 'dotenv';
 import { InventoryManagementDocumentBase } from '../database/interfaces';
@@ -13,7 +13,7 @@ export class InventoryManagementListener {
     private provider: WebSocketProvider;
     private inventoryManagement: InventoryManagement | undefined;
     private deployer: Wallet;
-    private mongo = new Mongo();
+    private mongo = mongo;
 
     constructor() {
         if (!process.env.PROVIDER_URL) {

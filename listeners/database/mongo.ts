@@ -3,8 +3,8 @@ import dotenv from 'dotenv';
 import { FinanceDocument, FinanceType, InventoryManagementDocumentBase, ProvenanceDocumentBase, RealEstateDocument, SupplyChainDocument, SupplyChainType } from './interfaces';
 dotenv.config();
 
-// todo make a singleton to keep a connection to the database
-export class Mongo {
+
+class Mongo {
     client: MongoClient;
     db: Db;
 
@@ -28,7 +28,6 @@ export class Mongo {
 
     async initialize() {
         try {
-            await this.connect();
             // check if collection exists, if so delete it so we can reinitialize
             const collections = await this.db.collections();
             if (collections.map(c => c.collectionName).includes('finance'))
@@ -68,7 +67,6 @@ export class Mongo {
         } catch (error) {
             console.error("Error initializing database:", error);
         } finally {
-            await this.close();
         }
     }
 
@@ -89,7 +87,6 @@ export class Mongo {
         }
 
         try {
-            await this.connect();
 
             // determine if finance collection exists
             const collections = await this.db.collections();
@@ -137,13 +134,11 @@ export class Mongo {
         } catch (error) {
             console.error("Error updating finance:", error);
         } finally {
-            await this.close();
         }
     }
 
     async updateSupplyChain(data: SupplyChainDocument) {
         try {   
-            await this.connect();
             // get the collection
             const collection = this.db.collection<SupplyChainDocument>('supplyChain');
             // find the document
@@ -184,7 +179,6 @@ export class Mongo {
         } catch (error) {
             console.error("Error updating supplyChain:", error);
         } finally {
-            await this.close();
         }
     }
 
@@ -197,7 +191,6 @@ export class Mongo {
         }
         
         try {
-            await this.connect();
             // determine if realEstate collection exists
             const collections = await this.db.collections();
             if (!collections.map(c => c.collectionName).includes('realEstate')) {
@@ -230,7 +223,6 @@ export class Mongo {
         } catch (error) {
             console.error("Error updating realEstate:", error);
         } finally {
-            await this.close();
         }
     }
 
@@ -244,3 +236,6 @@ export class Mongo {
     }
 
 }
+
+const mongo = new Mongo();
+export default mongo;

@@ -27,29 +27,38 @@ export class Deploy {
         const AutomatedProcess = await ethers.getContractFactory("AutomatedProcess", this.deployer);
         const automatedProcess = await AutomatedProcess.deploy();
         await automatedProcess.deployed();
-        console.log("AutomatedProcess deployed to:", automatedProcess.address);
 
         // deploy inventory management contract
         const InventoryManagement = await ethers.getContractFactory("InventoryManagement", this.deployer);
         const inventoryManagement = await InventoryManagement.deploy();
         await inventoryManagement.deployed();
-        console.log("InventoryManagement deployed to:", inventoryManagement.address);
 
         // deploy provenance contract
         const Provenance = await ethers.getContractFactory("Provenance", this.deployer);
         const provenance = await Provenance.deploy();
         await provenance.deployed();
-        console.log("Provenance deployed to:", provenance.address);
+        
+        console.table({
+            "AutomatedProcess deployed to": automatedProcess.address,
+            "InventoryManagement deployed to": inventoryManagement.address,
+            "Provenance deployed to": provenance.address
+        });
 
         // set automated process on inventory management and provenance contracts
         await inventoryManagement.connect(this.deployer).setAutomatedProcess(automatedProcess.address);
         await provenance.connect(this.deployer).setAutomatedProcess(automatedProcess.address);
-        console.log("AutomatedProcess set on InventoryManagement and Provenance");
+        console.table({
+            "AutomatedProcess set on InventoryManagement": '✅',
+            "AutomatedProcess set on Provenance": '✅'
+        });
 
         // set inventory management and provenance contracts on automated process
         await automatedProcess.connect(this.deployer).setInventoryManagement(inventoryManagement.address);
         await automatedProcess.connect(this.deployer).setProvenance(provenance.address);
-        console.log("InventoryManagement and Provenance set on AutomatedProcess");
+        console.table({
+            "InventoryManagement set on AutomatedProcess": '✅',
+            "Provenance set on AutomatedProcess": '✅'
+        });
 
         // save deployed contracts
         this.saveDeployedContracts(

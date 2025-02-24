@@ -2,7 +2,7 @@ import { ethers } from 'hardhat';
 import { OrderBook } from '../../typechain-types';
 import { WebSocketProvider } from '@ethersproject/providers';
 import { BigNumber, Wallet } from 'ethers';
-import { Mongo } from '../database/mongo';
+import mongo from '../database/mongo';
 import { toReadableAmount } from '../helpers';
 import dotenv from 'dotenv';
 dotenv.config();
@@ -11,7 +11,7 @@ export class ObmmListener {
     private provider: WebSocketProvider;
     private obmm: OrderBook | undefined;
     private deployer: Wallet;
-    private mongo = new Mongo();
+    private mongo = mongo;
 
     constructor() {
         if (!process.env.PROVIDER_URL) {

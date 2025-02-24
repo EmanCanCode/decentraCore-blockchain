@@ -2,7 +2,7 @@ import { ethers } from 'hardhat';
 import { EscrowFactory } from '../../typechain-types';
 import { WebSocketProvider } from '@ethersproject/providers';
 import { BigNumber, Wallet } from 'ethers';
-import { Mongo } from '../database/mongo';
+import mongo from '../database/mongo';
 import dotenv from 'dotenv';
 import { RealEstateDocument } from '../database/interfaces';
 dotenv.config();
@@ -12,7 +12,7 @@ export class EscrowFactoryListener {
     private provider: WebSocketProvider;
     private escrowFactory: EscrowFactory | undefined;
     private deployer: Wallet;
-    private mongo = new Mongo();
+    private mongo = mongo;
 
     constructor() {
         if (!process.env.PROVIDER_URL) {

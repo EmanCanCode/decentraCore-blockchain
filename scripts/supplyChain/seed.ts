@@ -1,8 +1,9 @@
 import { ethers } from "hardhat";
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { Wallet } from "ethers";
-import dotenv from 'dotenv';
 import { encodeProductId, productRecords, State } from "../../helpers/provenance";
+import * as supplyChainContracts from '../../logs/supplyChain/deploy.json'
+import dotenv from 'dotenv';
 dotenv.config();
 
 export class Seed {
@@ -132,9 +133,10 @@ export class Seed {
 }
 
 const seed = new Seed();
+const deployedContractAddresses = supplyChainContracts["contracts"];
 seed.main(
-    '0x0165878A594ca255338adfa4d48449f69242Eb8F', // inventoryManagementAddress
-    '0xa513E6E4b8f2a923D98304ec87F64353C4D5C853' // provenanceAddress
+    deployedContractAddresses["inventoryManagement"],
+    deployedContractAddresses["provenance"]
 ).then(() => {
     console.log("Seed complete");
     process.exit(0);

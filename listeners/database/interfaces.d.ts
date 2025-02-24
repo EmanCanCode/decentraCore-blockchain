@@ -1,5 +1,5 @@
 import { ObjectId }  from 'mongodb';
-import { InventoryManagement } from '../../typechain-types/contracts/supplyChain/InventoryManagement';
+// import { InventoryManagement } from '../../typechain-types/contracts/supplyChain/InventoryManagement';
 
 
 export type FinanceType = 'CPAMM' | 'CSAMM' | 'OBMM';

@@ -1,12 +1,15 @@
-import { Mongo } from "./database/mongo";
+import mongo from "./database/mongo";
 import { CpammListener } from "./finance/cpamm";
 import { CsammListener } from "./finance/csamm";
 import { ObmmListener } from "./finance/obmm";
 import { InventoryManagementListener } from "./supplyChain/inventoryManagement";
 import { ProvenanceListener } from "./supplyChain/provenance";
 import { EscrowFactoryListener } from "./realEstate/escrowFactory";
+import * as financeContracts from '../logs/finance/deploy.json';
+import * as supplyChainContracts from '../logs/supplyChain/deploy.json';
+import * as realEstateContracts from '../logs/realEstate/deploy.json';
 
-export class ListenerManager {
+class ListenerManager {
     financeListeners = {
         cpamm: new CpammListener(),
         csamm: new CsammListener(),
@@ -55,17 +58,21 @@ export class ListenerManager {
 }
 
 const manager = new ListenerManager();
+export default manager;
+
+const financeContractAddresses = financeContracts['contracts'];
+const supplyChainContractAddresses = supplyChainContracts['contracts'];
+const realEstateContractAddresses = realEstateContracts['contracts'];
+
 manager.initialize(
-    '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0', // CPAMM contract address
-    '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9', // CSAMM contract address
-    '0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9', // OBMM contract address
-    '0xa513E6E4b8f2a923D98304ec87F64353C4D5C853', // Provenance contract address
-    '0x0165878A594ca255338adfa4d48449f69242Eb8F', // InventoryManagement contract address
-    '0x959922bE3CAee4b8Cd9a407cc3ac1C251C2007B1', // EscrowFactory contract address
+    financeContractAddresses.CPAMM, // CPAMM contract address
+    financeContractAddresses.CSAMM, // CSAMM contract address
+    financeContractAddresses.OBMM, // OBMM contract address
+    supplyChainContractAddresses.provenance, // Provenance contract address
+    supplyChainContractAddresses.inventoryManagement, // InventoryManagement contract address
+    realEstateContractAddresses.escrowFactory, // EscrowFactory contract address
 ).then(async () => {
-    const mongo = new Mongo();
-    // initialize database
-    await mongo.initialize();
+    await mongo.connect();
     // start
     manager.listen();
     console.log("Listeners initialized and listening...");

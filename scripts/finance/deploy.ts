@@ -40,14 +40,14 @@ export class Deploy {
 
         // deploy token 1 
         const Token = await ethers.getContractFactory("FungibleToken", this.deployer);
-        const token1 = await Token.deploy("Eman Token 1", "EMAN1", ethers.utils.parseEther('1000000000000')); // 1 trillion tokens
+        const token1 = await Token.deploy("Eman Token 1", "EMAN1", ethers.utils.parseEther('1000000000000000')); // 1 quadrillion tokens
         await token1.deployed();
         deployedContracts["Eman Token 1"] = token1.address;
         // make  console.log("Eman Token 1 deployed to:", token1.address); in a table
         
         
         // deploy token2
-        const token2 = await Token.deploy("Eman Token 2", "EMAN2", ethers.utils.parseEther('1000000000000')); // 1 trillion tokens
+        const token2 = await Token.deploy("Eman Token 2", "EMAN2", ethers.utils.parseEther('1000000000000000')); // 1 quadrillion tokens
         await token2.deployed();
         deployedContracts["Eman Token 2"] = token2.address;
         console.table({

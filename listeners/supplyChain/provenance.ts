@@ -2,7 +2,7 @@ import { ethers } from 'hardhat';
 import { Provenance } from '../../typechain-types';
 import { WebSocketProvider } from '@ethersproject/providers';
 import { BigNumber, Wallet } from 'ethers';
-import { Mongo } from '../database/mongo';
+import mongo from '../database/mongo';
 import { toReadableAmount } from '../helpers';
 import dotenv from 'dotenv';
 import { ProvenanceDocumentBase } from '../database/interfaces';
@@ -13,7 +13,7 @@ export class ProvenanceListener {
     private provider: WebSocketProvider;
     private provenance: Provenance | undefined;
     private deployer: Wallet;
-    private mongo = new Mongo();
+    private mongo = mongo;
 
     constructor() {
         if (!process.env.PROVIDER_URL) {

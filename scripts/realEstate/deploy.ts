@@ -43,7 +43,9 @@ export class Deploy {
         const RealEstate = await ethers.getContractFactory("RealEstate", this.deployer);
         const realEstate = await RealEstate.deploy();
         await realEstate.deployed();
-        console.log("RealEstate deployed to:", realEstate.address);
+        console.table({
+            "RealEstate deployed to": realEstate.address
+        });
 
         // mint all the tokens
 
@@ -89,22 +91,25 @@ export class Deploy {
         );
         console.log("Minted Luxury Homes: IDs 7,8,9 to seeder3");
 
-        console.log("URI for token ID 1:", await realEstate.uri(1));
-        console.log("URI for token ID 2:", await realEstate.uri(2));
-        console.log("URI for token ID 3:", await realEstate.uri(3));
-        console.log("URI for token ID 4:", await realEstate.uri(4));
-        console.log("URI for token ID 5:", await realEstate.uri(5));
-        console.log("URI for token ID 6:", await realEstate.uri(6));
-        console.log("URI for token ID 7:", await realEstate.uri(7));
-        console.log("URI for token ID 8:", await realEstate.uri(8));
-        console.log("URI for token ID 9:", await realEstate.uri(9));
-
+        console.table({
+            "Single-Family Home ID 1 URI": await realEstate.uri(1),
+            "Single-Family Home ID 2 URI": await realEstate.uri(2),
+            "Single-Family Home ID 3 URI": await realEstate.uri(3),
+            "Multi-Family Home ID 4 URI": await realEstate.uri(4),
+            "Multi-Family Home ID 5 URI": await realEstate.uri(5),
+            "Multi-Family Home ID 6 URI": await realEstate.uri(6),
+            "Luxury Home ID 7 URI": await realEstate.uri(7),
+            "Luxury Home ID 8 URI": await realEstate.uri(8),
+            "Luxury Home ID 9 URI": await realEstate.uri(9)
+        });
 
         // deploy the real estate escrow factory contract
         const EscrowFactory = await ethers.getContractFactory("EscrowFactory", this.deployer);
         const escrowFactory = await EscrowFactory.deploy();
         await escrowFactory.deployed();
-        console.log("EscrowFactory deployed to:", escrowFactory.address);
+        console.table({
+            "EscrowFactory deployed to": escrowFactory.address
+        }); 
 
         this.saveDeployedContracts(realEstate.address, escrowFactory.address);
 
@@ -121,8 +126,8 @@ export class Deploy {
         const filePath = path.resolve(__dirname, "../../logs/realEstate/deploy.json");
         const deploymentLog = {
             contracts: {
-                "RealEstate": realEstateAddress,
-                "EscrowFactory": escrowFactoryAddress
+                "realEstate": realEstateAddress,
+                "escrowFactory": escrowFactoryAddress
             },
             timestamp: Date.now() // current time
         };
