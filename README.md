@@ -1,6 +1,6 @@
 # DecentraCore
 
-DecentraCore is a comprehensive blockchain portfolio project that demonstrates advanced decentralized application development across multiple sectors: Finance, Supply Chain, and Real Estate. The project includes a suite of smart contracts showcasing key concepts such as automated market making, order book trading, product provenance, inventory management, and multi-party escrow via NFTs.
+DecentraCore is a comprehensive blockchain portfolio project that demonstrates advanced decentralized application development across multiple sectors: Finance, Supply Chain, and Real Estate. The project includes a suite of smart contracts showcasing key concepts such as automated market making, order book trading, product provenance, inventory management, and multi-party real estate escrow via NFTs.
 
 ---
 
@@ -8,6 +8,7 @@ DecentraCore is a comprehensive blockchain portfolio project that demonstrates a
 
 - [Overview](#overview)
 - [Requirements](#requirements)
+- [Tech Stack](#tech-stack)
 - [Modules](#modules)
   - [Finance](#finance)
   - [Supply Chain](#supply-chain)
@@ -53,6 +54,17 @@ Each module is designed to be modular and reusable, reflecting production-ready 
 - **npm:** v10.7.0
 
 ---
+
+## Tech Stack
+
+- **Solidity (0.8.24)** – smart contract language
+- **Hardhat** – development environment for compiling, testing, and deploying contracts
+- **TypeScript** – scripts, listeners, and back-end code
+- **Ethers.js** – interaction with Ethereum smart contracts
+- **Node.js / Express** – Metadata hosting, locally
+- **MongoDB** – database for off-chain data storage (swaps, escrow states, inventory, etc.)
+- **dotenv** – environment variable management
+- **OpenZeppelin** – reusable libraries for ERC contracts (security, standards)
 
 ## Modules
 
