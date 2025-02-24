@@ -117,7 +117,20 @@ export class Deploy {
             console.log(`Seeder ${this.seeders.indexOf(seeder) + 1} approved EscrowFactory to spend their tokens`);
         }
 
-        this.saveDeployedContracts(realEstate.address, escrowFactory.address);
+        // create finance contract for real estate that was being financed (where nft is sent after escrow)
+        const FinanceContract = await ethers.getContractFactory("Finance", this.deployer);
+        const financeContract = await FinanceContract.deploy(realEstate.address);
+        await financeContract.deployed();
+        console.table({
+            "Finance to RealEstate deployed to": financeContract.address
+        });
+
+
+        this.saveDeployedContracts(
+            realEstate.address, 
+            escrowFactory.address,
+            financeContract.address
+        );
 
         return {
             realEstate: realEstate.address,
@@ -127,13 +140,15 @@ export class Deploy {
 
     private saveDeployedContracts(
         realEstateAddress: string,
-        escrowFactoryAddress: string
+        escrowFactoryAddress: string,
+        financeAddress: string
     ) {
         const filePath = path.resolve(__dirname, "../../logs/realEstate/deploy.json");
         const deploymentLog = {
             contracts: {
                 "realEstate": realEstateAddress,
-                "escrowFactory": escrowFactoryAddress
+                "escrowFactory": escrowFactoryAddress,
+                "finance": financeAddress
             },
             timestamp: Date.now() // current time
         };
