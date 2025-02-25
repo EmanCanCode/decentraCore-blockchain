@@ -42,6 +42,14 @@ contract Finance is IERC1155Receiver {
         IERC1155(nftAddress).safeTransferFrom(address(this), actor, id, 1, "");
     }
 
+    function setIdInFinance(
+        address actor,
+        uint id
+    ) external {
+        require(msg.sender == owner, "Only the owner can set the id in finance");
+        idInFinance[actor] = id;
+    }
+
     function onERC1155Received(
         address operator,
         address from,

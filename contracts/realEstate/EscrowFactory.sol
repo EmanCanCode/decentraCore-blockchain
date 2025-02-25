@@ -139,7 +139,7 @@ contract EscrowFactory {
     function _computeEscrowId(
         EscrowParams memory _params,
         uint _currentNonce
-    ) internal pure returns (bytes32) {
+    ) public pure returns (bytes32) {
         return keccak256(
             abi.encodePacked(
                 _params.buyer,
