@@ -10,8 +10,8 @@
   ],
   "attributes": {
     "Units": 2,
-    "Average Bedrooms": 2,
-    "Average Bathrooms": 1,
+    "Bedrooms": 2,
+    "Bathrooms": 1,
     "Total SquareFeet": 1800,
     "YearBuilt": 1995,
     "Location": "Springfield, IL",

@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 
 contract EscrowFactory {
     address public owner;
-    mapping(address => mapping(address => uint)) public nonce; // nonce[buyer][lender]
+    mapping(address => mapping(address => uint)) public nonce; // nonce[buyer][seller]
     mapping(bytes32 => address) public escrows; // escrows[escrowId] => escrow address
     mapping(bytes32 => bool) public verifiedEscrowIds; // escrowId => verified flag
 

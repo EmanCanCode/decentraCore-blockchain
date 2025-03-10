@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import express from "express";
+import cors from 'cors';
 import { RealEstateMetadata } from "./interfaces";
 import dotenv from "dotenv";
 dotenv.config();
@@ -23,7 +24,8 @@ export class MetadataManager {
     this.portUrl = process.env.METADATA_URL as string;
 
     this.app = express();
-
+    this.app.use(cors());
+    
     // Define the public directory path (assumes public is in the root of DecentralCore)
     const publicDir = path.resolve(__dirname, "../../../public");
     // Setup Express to serve static files from the public directory
