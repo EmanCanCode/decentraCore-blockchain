@@ -45,27 +45,27 @@ export const productRecords: ProductRecord[] = [
         variety: "High-grade bearings for industrial machinery",
         productType: "Industrial",
         timestamp: 1631779200,
-        location: "0x000000",
+        location: toEvenHex("Texas, USA"),
         state: State.Created,
-        additionalInfo: toEvenHex("Precision bearings")
+        additionalInfo: toEvenHex("Precision bearings that are used for various things: industrial machinery, automotive, etc. This is a must have for any mechanical engineer.")
     },
     {
         productName: "Semiconductor Wafers",
         variety: "Silicon wafers for chip fabrication",
         productType: "Industrial",
         timestamp: 1631779204,
-        location: "0x000000",
+        location: toEvenHex("Taiwan"),
         state: State.Created,
-        additionalInfo: toEvenHex("Semi wafers")
+        additionalInfo: toEvenHex("Semi wafers - the world RUNS on these. You can't make chips without them. Is this the future of money?")
     },
     {
         productName: "Polypropylene Pellets",
         variety: "Versatile plastic pellets for molding applications",
         productType: "Industrial",
         timestamp: 1631779207,
-        location: "0x000000",
+        location: toEvenHex("China"),
         state: State.Created,
-        additionalInfo: toEvenHex("pellets")
+        additionalInfo: toEvenHex("pellets - what more can I say? They're used for everything. From toys to car parts, these are the building blocks of the modern world.")
     },
 ];
 

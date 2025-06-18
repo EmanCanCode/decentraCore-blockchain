@@ -37,7 +37,7 @@ contract Finance is IERC1155Receiver {
         // the id returned must be the same as the id of the finance.
         require(idInFinance[actor] == id, "Actor does not have a finance with this id");
         // remove the id from the mapping
-        delete idInFinance[actor];
+        idInFinance[actor] = 0;
         // send the nft to the actor
         IERC1155(nftAddress).safeTransferFrom(address(this), actor, id, 1, "");
     }

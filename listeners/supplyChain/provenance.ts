@@ -4,26 +4,22 @@ import { WebSocketProvider } from '@ethersproject/providers';
 import { BigNumber, Wallet } from 'ethers';
 import mongo from '../database/mongo';
 import { toReadableAmount } from '../helpers';
-import dotenv from 'dotenv';
 import { ProvenanceDocumentBase } from '../database/interfaces';
 import { decodeProductId } from '../../helpers/provenance';
+import * as deployLogs from '../../logs/supplyChain/deploy.json';
+import dotenv from 'dotenv';
+import { getResilientProvider } from '../utils/provider';
 dotenv.config();
 
 export class ProvenanceListener {
-    private provider: WebSocketProvider;
     private provenance: Provenance | undefined;
     private deployer: Wallet;
     private mongo = mongo;
 
-    constructor() {
-        if (!process.env.PROVIDER_URL) {
-            throw new Error("PROVIDER_URL is not set");
-        } else if (!process.env.DEPLOYER_PRIVATE_KEY) {
+    constructor(private provider: WebSocketProvider) {
+        if (!process.env.DEPLOYER_PRIVATE_KEY) {
             throw new Error("DEPLOYER is not set");
         }
-        // Initialize WebSocketProvider
-        const providerUrl = process.env.PROVIDER_URL.replace(/^https?:\/\//, "");
-        this.provider = new ethers.providers.WebSocketProvider(`ws://${providerUrl}`);
         // Initialize deployer
         this.deployer = new ethers.Wallet(
             process.env.DEPLOYER_PRIVATE_KEY, 
@@ -42,6 +38,7 @@ export class ProvenanceListener {
             return;
         }
         console.log("Listening for Provenance CreatedRecord...");
+        // listen for CreatedRecord event
         this.provenance.on('CreatedRecord', async (
             productName: string,
             variety: string,
@@ -80,6 +77,7 @@ export class ProvenanceListener {
             return;
         }
         console.log("Listening for Provenance UpdatedRecord...");
+        // listen for UpdatedRecord event
         this.provenance.on('UpdatedRecord', async (
             productId: string,
             timestamp: BigNumber,
@@ -121,4 +119,31 @@ export class ProvenanceListener {
         });
     }
 
+    removeListeners() {
+        if (!this.provenance) return;
+        this.provenance.removeAllListeners("CreatedRecord");
+        this.provenance.removeAllListeners("UpdatedRecord");
+        console.log("Removed all listeners from Provenance contract.");
+    }
 }
+
+// // initialize websocket provider
+// const raw = process.env.PROVIDER_URL!;
+// // turn http(s):// to ws(s)://
+// const url = raw.replace(/^https?:\/\//, "ws://").replace(/\/$/, "");
+// const provider = getResilientProvider(url);
+// const provenanceListener = new ProvenanceListener(provider);
+
+// (async () => {
+//     try {
+//         // initialize contract
+//         await provenanceListener.setProvenance(deployLogs.contracts.provenance);
+//         // start listening
+//         console.log("Starting ProvenanceListener...");
+//         provenanceListener.listenForCreatedRecord();
+//         provenanceListener.listenForUpdatedRecord();
+//         console.log("ProvenanceListener initialized successfully.");
+//     } catch (error) {
+//         console.error("Error initializing ProvenanceListener:", error);
+//     }
+// })();

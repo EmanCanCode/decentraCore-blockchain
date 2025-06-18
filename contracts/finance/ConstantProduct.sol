@@ -2,7 +2,6 @@
 pragma solidity ^0.8.24;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-
 /// @notice A simple implementation of a constant product AMM with a 0.3% fee
 /// @author Emmanuel Douge - https://github.com/EmanCanCode/DeFi/blob/main/contracts/ConstantProduct.sol
 contract ConstantProduct {
@@ -20,6 +19,8 @@ contract ConstantProduct {
     uint public totalSupply;
     // keep track of the LP tokens owned by each address
     mapping(address => uint) public balanceOf;
+    // tolerance for margin of error with adding liquidity (dy / dx = y / x)
+    uint constant TOLERANCE_BPS = 50; // 0.5%
 
     // ----- CONSTRUCTOR ----- //
 
@@ -32,9 +33,14 @@ contract ConstantProduct {
 
     // ----- EVENTS ----- //
 
-    event AddedLiquidity (address indexed to, uint shares);
-    event RemovedLiquidity (address indexed from, uint shares);
-    event Swapped (address indexed from, address indexed to, uint amountReceived, uint amountReturned);
+    event AddedLiquidity(address indexed to, uint shares);
+    event RemovedLiquidity(address indexed from, uint shares);
+    event Swapped(
+        address indexed from,
+        address indexed to,
+        uint amountReceived,
+        uint amountReturned
+    );
 
     // ----- PRIVATE FUNCTIONS ----- //
 
@@ -103,11 +109,20 @@ contract ConstantProduct {
 
         // Collect received token from the sender, depending on which token was received
         bool isTokenA = _tokenReceived == address(tokenA);
-        (IERC20 tokenReceived, IERC20 tokenReturned, uint reserveReceived, uint reserveReturned) = isTokenA
-            ? (tokenA, tokenB, reserveA, reserveB)
-            : (tokenB, tokenA, reserveB, reserveA);
+        (
+            IERC20 tokenReceived,
+            IERC20 tokenReturned,
+            uint reserveReceived,
+            uint reserveReturned
+        ) = isTokenA
+                ? (tokenA, tokenB, reserveA, reserveB)
+                : (tokenB, tokenA, reserveB, reserveA);
         require(
-            tokenReceived.transferFrom(msg.sender, address(this), _amountReceived),
+            tokenReceived.transferFrom(
+                msg.sender,
+                address(this),
+                _amountReceived
+            ),
             "TransferFrom failed"
         );
 
@@ -118,8 +133,10 @@ contract ConstantProduct {
         // x is the token received's reserve before the swap
         // dy = what is going to be returned to the user
         // x * y = k, where k is the constant product of the reserves
-        uint amountReceivedWithFee = (_amountReceived * 997) / 1000;  // 0.3% fee applied 
-        _amountReturned = (reserveReturned * amountReceivedWithFee) / (reserveReceived + amountReceivedWithFee);
+        uint amountReceivedWithFee = (_amountReceived * 997) / 1000; // 0.3% fee applied
+        _amountReturned =
+            (reserveReturned * amountReceivedWithFee) /
+            (reserveReceived + amountReceivedWithFee);
 
         // Transfer returned token to the sender, depending on which token was received
         require(
@@ -129,7 +146,10 @@ contract ConstantProduct {
 
         // send owner the fee
         require(
-            tokenReceived.transfer(owner, _amountReceived - amountReceivedWithFee), // this is the fee calculation
+            tokenReceived.transfer(
+                owner,
+                _amountReceived - amountReceivedWithFee
+            ), // this is the fee calculation
             "Transfer fee failed"
         );
 
@@ -139,15 +159,22 @@ contract ConstantProduct {
             tokenB.balanceOf(address(this))
         );
 
-        emit Swapped(msg.sender, address(tokenReturned), _amountReceived, _amountReturned);
+        emit Swapped(
+            msg.sender,
+            address(tokenReturned),
+            _amountReceived,
+            _amountReturned
+        );
     }
-
 
     /// @notice Adds liquidity to the pool, minting LP tokens and assigning them to the sender
     /// @param _amountA The amount of tokenA to add to the pool
     /// @param _amountB The amount of tokenB to add to the pool
     /// @return _shares The amount of LP tokens that were minted
-    function addLiquidity(uint _amountA, uint _amountB) external returns (uint _shares) {
+    function addLiquidity(
+        uint _amountA,
+        uint _amountB
+    ) external returns (uint _shares) {
         // Get tokenA and tokenB
         tokenA.transferFrom(msg.sender, address(this), _amountA);
         tokenB.transferFrom(msg.sender, address(this), _amountB);
@@ -161,7 +188,15 @@ contract ConstantProduct {
         */
         // require that the product of the reserves is equal to the product of the new reserves
         if (reserveA > 0 || reserveB > 0) {
-            require(reserveA * _amountB == reserveB * _amountA, "dy / dx != y / x");  // quick math - cross multiply instead of dividing
+            require(
+                _isWithinLiquidityMargin(
+                    _amountA,
+                    _amountB,
+                    reserveA,
+                    reserveB
+                ),
+                "dy / dx != y / x"
+            );
         }
         // Mint shares, without affecting the price of the pool
         if (totalSupply == 0) {
@@ -183,15 +218,13 @@ contract ConstantProduct {
         emit AddedLiquidity(msg.sender, _shares);
     }
 
-
     /// @notice Removes liquidity from the pool, burning LP tokens and returning the underlying tokens to the sender
     /// @param _shares The amount of LP tokens to remove
     /// @return amountA The amount of tokenA that was returned
     /// @return amountB The amount of tokenB that was returned
     function removeLiquidity(
         uint _shares
-    ) external  returns (uint amountA, uint amountB) {
-
+    ) external returns (uint amountA, uint amountB) {
         // Get the balance of tokenA and tokenB
         uint256 bal0 = tokenA.balanceOf(address(this));
         uint256 bal1 = tokenB.balanceOf(address(this));
@@ -217,5 +250,92 @@ contract ConstantProduct {
         tokenB.transfer(msg.sender, amountB);
 
         emit RemovedLiquidity(msg.sender, _shares);
+    }
+
+    function getAmountOut(
+        address _tokenIn,
+        uint256 _amountIn
+    ) external view returns (uint256 _amountOut) {
+        require(_amountIn > 0, "Amount in must be > 0");
+        uint256 reserveIn;
+        uint256 reserveOut;
+
+        if (_tokenIn == address(tokenA)) {
+            reserveIn = reserveA;
+            reserveOut = reserveB;
+        } else if (_tokenIn == address(tokenB)) {
+            reserveIn = reserveB;
+            reserveOut = reserveA;
+        } else {
+            revert("Token not in pair");
+        }
+
+        // Apply the 0.3% fee: multiply amountIn by 997/1000
+        uint256 amountInWithFee = (_amountIn * 997) / 1000;
+        // Calculate output using the constant product formula:
+        // amountOut = (reserveOut * amountInWithFee) / (reserveIn + amountInWithFee)
+        _amountOut =
+            (reserveOut * amountInWithFee) /
+            (reserveIn + amountInWithFee);
+    }
+
+    function getRequiredLiquidityAmount(
+        address _tokenIn,
+        uint256 _amountIn
+    ) external view returns (uint256 requiredAmount) {
+        require(_amountIn > 0, "Input must be > 0");
+
+        if (_tokenIn == address(tokenA)) {
+            // Ensure liquidity exists to calculate the ratio
+            require(reserveA > 0, "No liquidity available");
+            // required amount for tokenB = (amountIn * reserveB) / reserveA
+            requiredAmount = (_amountIn * reserveB) / reserveA;
+        } else if (_tokenIn == address(tokenB)) {
+            require(reserveB > 0, "No liquidity available");
+            // required amount for tokenA = (amountIn * reserveA) / reserveB
+            requiredAmount = (_amountIn * reserveA) / reserveB;
+        } else {
+            revert("Token not in pair");
+        }
+    }
+
+    function getLiquidityAmounts(
+        uint _shares
+    ) external view returns (uint amountA, uint amountB) {
+        // Get current balances of tokenA and tokenB held by the contract
+        uint256 balanceA = tokenA.balanceOf(address(this));
+        uint256 balanceB = tokenB.balanceOf(address(this));
+
+        // Calculate the amounts to be returned:
+        // amountA = (shares * balanceA) / totalSupply
+        // amountB = (shares * balanceB) / totalSupply
+        amountA = (_shares * balanceA) / totalSupply;
+        amountB = (_shares * balanceB) / totalSupply;
+    }
+
+    function _isWithinLiquidityMargin(
+        uint _amountA,
+        uint _amountB,
+        uint _reserveA,
+        uint _reserveB
+    ) internal pure returns (bool) {
+        // Calculate the two cross products.
+        uint product1 = _reserveA * _amountB;
+        uint product2 = _reserveB * _amountA;
+
+        // Get the absolute difference.
+        uint diff = product1 > product2
+            ? product1 - product2
+            : product2 - product1;
+
+        // Avoid division by zero; if product1 is zero, then amounts are zero as well.
+        if (product1 == 0) {
+            return diff == 0;
+        }
+
+        // Calculate the relative difference in basis points:
+        // (diff * 10000) / product1 gives the difference in basis points.
+        uint diffBps = (diff * 10000) / product1;
+        return diffBps <= TOLERANCE_BPS;
     }
 }

@@ -76,8 +76,10 @@ export class Seed {
         // seed the seeders
         for (let i = 0; i < this.seeders.length; i++) {
             // send 1m of each token to each seeder
-            await tokenA.transfer(this.seeders[i].address, oneMillionTokens);
-            await tokenB.transfer(this.seeders[i].address, oneMillionTokens);
+            let tx = await tokenA.transfer(this.seeders[i].address, oneMillionTokens);
+            await tx.wait();
+            tx = await tokenB.transfer(this.seeders[i].address, oneMillionTokens);
+            await tx.wait();
         }
 
         // if CPAMM is deployed, seed it
@@ -86,12 +88,15 @@ export class Seed {
             const cpamm = await ethers.getContractAt("ConstantProduct", contracts.CPAMM, this.deployer);
             // deployer adds liquidity. should be fine since deployer has started with 1 trillion tokens
             const oneBillionTokens = ethers.utils.parseEther('1000000000');
-            await tokenA.connect(this.deployer).approve(cpamm.address, oneBillionTokens);
-            await tokenB.connect(this.deployer).approve(cpamm.address, oneBillionTokens);
-            await cpamm.connect(this.deployer).addLiquidity(
+            let tx = await tokenA.connect(this.deployer).approve(cpamm.address, oneBillionTokens);
+            await tx.wait();
+            tx = await tokenB.connect(this.deployer).approve(cpamm.address, oneBillionTokens);
+            await tx.wait();
+            tx = await cpamm.connect(this.deployer).addLiquidity(
                 oneBillionTokens,
                 oneBillionTokens
             );
+            await tx.wait();
 
             // seeders make swaps
             for (let i = 0; i < this.seeders.length; i++) {
@@ -99,27 +104,28 @@ export class Seed {
                 let random = ethers.utils.parseEther(
                     Math.floor(Math.random() * 250000).toString()
                 ); // 250000 is 1/4 of one million
-                await tokenA.connect(this.seeders[i]).approve(cpamm.address, random);
-            
+                let tx = await tokenA.connect(this.seeders[i]).approve(cpamm.address, random);
+                await tx.wait();
+
                 // trade random amount of tokenA for tokenB
-                await cpamm.connect(this.seeders[i]).swap(
+                tx = await cpamm.connect(this.seeders[i]).swap(
                     tokenA.address,
                     random
                 );
-                // wait 1 second
-                await this.wait(1.5);
+                await tx.wait();
+
                 // trade random amount of tokenB for tokenA
                 random = ethers.utils.parseEther(
                     Math.floor(Math.random() * 250000).toString()
                 );
-                await tokenB.connect(this.seeders[i]).approve(cpamm.address, random);
-                
-                await cpamm.connect(this.seeders[i]).swap(
+                tx = await tokenB.connect(this.seeders[i]).approve(cpamm.address, random);
+                await tx.wait();
+
+                tx = await cpamm.connect(this.seeders[i]).swap(
                     tokenB.address,
                     random
                 );
-                // wait 1 second
-                await this.wait(1.5);
+                await tx.wait();
             }
 
         }
@@ -130,43 +136,46 @@ export class Seed {
             const csamm = await ethers.getContractAt("ConstantSum", contracts.CSAMM, this.deployer);
             // deployer adds liquidity. should be fine since deployer has started with 1 trillion tokens
             const oneBillionTokens = ethers.utils.parseEther('1000000000');
-            await tokenA.connect(this.deployer).approve(csamm.address, oneBillionTokens);
-            await tokenB.connect(this.deployer).approve(csamm.address, oneBillionTokens);
-            await csamm.connect(this.deployer).addLiquidity(
+            let tx = await tokenA.connect(this.deployer).approve(csamm.address, oneBillionTokens);
+            await tx.wait();
+
+            tx = await tokenB.connect(this.deployer).approve(csamm.address, oneBillionTokens);
+            await tx.wait();
+            
+            tx = await csamm.connect(this.deployer).addLiquidity(
                 oneBillionTokens,
                 oneBillionTokens
             );
-            console.log("Liquidity added to CSAMM \n");
-            console.log("CSAMM - Token A reserves: ", (await csamm.reserveA()).toString() + '\n');
-            console.log("CSAMM - Token B reserves: ", (await csamm.reserveB()).toString() + '\n');
+            await tx.wait();
+            // console.log("Liquidity added to CSAMM \n");
+            // console.log("CSAMM - Token A reserves: ", (await csamm.reserveA()).toString() + '\n');
+            // console.log("CSAMM - Token B reserves: ", (await csamm.reserveB()).toString() + '\n');
 
-            // seeders make swaps
-            for (let i = 0; i < this.seeders.length; i++) {
-                // create random number that is no more than 1/4 of one million
-                let random = ethers.utils.parseEther(
-                    Math.floor(Math.random() * 250000).toString()
-                ); // 250000 is 1/4 of one million
-                await tokenA.connect(this.seeders[i]).approve(csamm.address, random);
-                // trade random amount of tokenA for tokenB
-                await csamm.connect(this.seeders[i]).swap(
-                    tokenA.address,
-                    random
-                );
-                // wait 1 second
-                await this.wait(1.5); 
+            // // seeders make swaps
+            // for (let i = 0; i < this.seeders.length; i++) {
+            //     // create random number that is no more than 1/4 of one million
+            //     let random = ethers.utils.parseEther(
+            //         Math.floor(Math.random() * 250000).toString()
+            //     ); // 250000 is 1/4 of one million
+            //     await tokenA.connect(this.seeders[i]).approve(csamm.address, random);
+            //     // trade random amount of tokenA for tokenB
+            //     await csamm.connect(this.seeders[i]).swap(
+            //         tokenA.address,
+            //         random
+            //     );
+            //     
 
-                // trade random amount of tokenB for tokenA
-                random = ethers.utils.parseEther(
-                    Math.floor(Math.random() * 250000).toString()
-                );
-                await tokenB.connect(this.seeders[i]).approve(csamm.address, random);
-                await csamm.connect(this.seeders[i]).swap(
-                    tokenB.address,
-                    random
-                );
-                // wait 1 second
-                await this.wait(1.5);
-            }
+            //     // trade random amount of tokenB for tokenA
+            //     random = ethers.utils.parseEther(
+            //         Math.floor(Math.random() * 250000).toString()
+            //     );
+            //     await tokenB.connect(this.seeders[i]).approve(csamm.address, random);
+            //     await csamm.connect(this.seeders[i]).swap(
+            //         tokenB.address,
+            //         random
+            //     );
+            //     
+            // }
         }
 
         // if OBMM is deployed, seed it
@@ -209,7 +218,7 @@ export class Seed {
                     tokenA.address,
                     seederBalance.div(5) // they should make order 1/5 of their balance every time (use whole balance)
                 );
-                await this.wait(1.5); // wait 1 second
+                
             }
 
 
@@ -224,7 +233,7 @@ export class Seed {
                     tokenB.address,
                     seederBalance.div(5) // they should make order 1/5 of their balance every time (use whole balance)
                 );
-                await this.wait(1.5); // wait 1 second
+                
             }
 
 
@@ -239,7 +248,7 @@ export class Seed {
                     tokenA.address,
                     seederBalance.div(5) // they should make order 1/5 of their balance every time (use whole balance)
                 );
-                await this.wait(1.5); // wait 1 second
+                
             }
 
             // seeder 4 fills some orders
@@ -256,7 +265,7 @@ export class Seed {
             const ordersToFill = [1, 2, 6, 7, 11, 12];
             for (let order of ordersToFill) {
                 await obmm.connect(this.seeders[3]).fillOrder(order);
-                await this.wait(1.5); // wait 1 second
+                
             }
 
             // seeder 5 makes multiple orders - cancels all orders
@@ -267,7 +276,7 @@ export class Seed {
                 tokenA.address,
                 ethers.utils.parseEther('100')
             );
-            await this.wait(1.5); // wait 1 second
+            
             const orderIdToCancel = await obmm.orderCount();
             // cancel order
             await obmm.connect(this.seeders[4]).cancelOrder(orderIdToCancel);
@@ -283,7 +292,7 @@ export class Seed {
 
 const seed = new Seed();
 
-const deployedContractAddresses = financeContracts['contracts'];
+const { OBMM, ...deployedContractAddresses } = financeContracts['contracts'];
 seed.main(deployedContractAddresses).then(() => {
     console.log("Seed completed");
     process.exit(0);

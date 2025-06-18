@@ -20,6 +20,8 @@ contract ConstantSum {
     uint public totalSupply;
     // keep track of the LP tokens owned by each address
     mapping(address => uint) public balanceOf;
+    // tolerance for margin of error with adding liquidity (dy / dx = y / x)
+    uint constant TOLERANCE_BPS = 50; // 0.5%
 
     // ----- CONSTRUCTOR ----- //
 
@@ -153,7 +155,12 @@ contract ConstantSum {
         // ensure that price does not get affected by the liquidity added
         if (reserveA > 0 || reserveB > 0) {
             require(
-                reserveA * _amountB == reserveB * _amountA,
+                _isWithinLiquidityMargin(
+                    _amountA,
+                    _amountB,
+                    reserveA,
+                    reserveB
+                ),
                 "dx / dy != x / y"
             );
         }
@@ -200,5 +207,70 @@ contract ConstantSum {
         tokenB.transfer(msg.sender, _amountB);
 
         emit RemovedLiquidity(msg.sender, _shares);
+    }
+
+     // ----- HELPER VIEW FUNCTIONS ----- //
+
+    /// @notice Given an input amount of a token, returns the fee-adjusted output amount.
+    /// For a constant sum AMM, this is simply the input adjusted by the fee.
+    function getAmountOut(address _tokenIn, uint256 _amountIn) external view returns (uint256 _amountOut) {
+        require(_amountIn > 0, "Amount in must be > 0");
+        uint256 amountInWithFee = (_amountIn * 997) / 1000;
+        _amountOut = amountInWithFee;
+        if (_tokenIn == address(tokenA)) {
+            require(_amountOut <= reserveB, "Insufficient liquidity");
+        } else if (_tokenIn == address(tokenB)) {
+            require(_amountOut <= reserveA, "Insufficient liquidity");
+        } else {
+            revert("Token not in pair");
+        }
+    }
+
+    /// @notice For a given input amount of one token, returns the required complementary amount to maintain the reserve ratio.
+    function getRequiredLiquidityAmount(address _tokenIn, uint256 _amountIn) external view returns (uint256 requiredAmount) {
+        require(_amountIn > 0, "Input must be > 0");
+        if (_tokenIn == address(tokenA)) {
+            require(reserveA > 0, "No liquidity available");
+            requiredAmount = (_amountIn * reserveB) / reserveA;
+        } else if (_tokenIn == address(tokenB)) {
+            require(reserveB > 0, "No liquidity available");
+            requiredAmount = (_amountIn * reserveA) / reserveB;
+        } else {
+            revert("Token not in pair");
+        }
+    }
+
+    /// @notice Returns the amounts of tokenA and tokenB that would be returned for burning _shares of LP tokens.
+    function getLiquidityAmounts(uint _shares) external view returns (uint _amountA, uint _amountB) {
+        uint256 balanceA = tokenA.balanceOf(address(this));
+        uint256 balanceB = tokenB.balanceOf(address(this));
+        _amountA = (_shares * balanceA) / totalSupply;
+        _amountB = (_shares * balanceB) / totalSupply;
+    }
+
+    function _isWithinLiquidityMargin(
+        uint _amountA,
+        uint _amountB,
+        uint _reserveA,
+        uint _reserveB
+    ) internal pure returns (bool) {
+        // Calculate the two cross products.
+        uint product1 = _reserveA * _amountB;
+        uint product2 = _reserveB * _amountA;
+
+        // Get the absolute difference.
+        uint diff = product1 > product2
+            ? product1 - product2
+            : product2 - product1;
+
+        // Avoid division by zero; if product1 is zero, then amounts are zero as well.
+        if (product1 == 0) {
+            return diff == 0;
+        }
+
+        // Calculate the relative difference in basis points:
+        // (diff * 10000) / product1 gives the difference in basis points.
+        uint diffBps = (diff * 10000) / product1;
+        return diffBps <= TOLERANCE_BPS;
     }
 }

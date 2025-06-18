@@ -1,6 +1,4 @@
 import { ObjectId }  from 'mongodb';
-// import { InventoryManagement } from '../../typechain-types/contracts/supplyChain/InventoryManagement';
-
 
 export type FinanceType = 'CPAMM' | 'CSAMM' | 'OBMM';
 export interface FinanceDocument {  // CPAMM, CSAMM AND OBMM will have this interface

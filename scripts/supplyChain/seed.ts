@@ -54,82 +54,77 @@ export class Seed {
         for (let i = 0; i < items.length; i++) {
             const item = items[i];
             // register 3 items with deployer
-            await inventoryManagement.connect(this.deployer).registerItem(
+            let tx = await inventoryManagement.connect(this.deployer).registerItem(
                 item.name,
                 item.description,
                 item.reorderThreshold
             );
+            await tx.wait(); 
 
             // update inventory for each item to the reorder threshold
-            await inventoryManagement.connect(this.deployer).updateStock(
+            tx = await inventoryManagement.connect(this.deployer).updateStock(
                 i + 1, // item id
-                item.reorderThreshold,
+                50, // order quantity
                 0, // movement type - 0 is for inbound
                 "Store A", // location
                 "Initial stock" // note
             );
+            await tx.wait();
         }
 
         // seed provenance contract with three records
-        const currentTimestamp = Math.floor(Date.now() / 1000)
-        for (let i = 0; i < productRecords.length; i++) {
-            const product = productRecords[i];
-            await provenance.connect(
-                this.seeders[i]
-            ).createRecord(
-                product.productName,
-                product.variety,
-                product.productType,
-                product.timestamp,
-                product.location,
-                product.state, 
-                product.additionalInfo,
-                { value: ethers.utils.parseEther(`${i + 1}`) }
-            );
+        // const currentTimestamp = Math.floor(Date.now() / 1000)
+        // for (let i = 0; i < 3; i++) {
+        //     const product = productRecords[i];
+        //     let tx = await provenance.connect(
+        //         this.seeders[i]
+        //     ).createRecord(
+        //         product.productName,
+        //         product.variety,
+        //         product.productType,
+        //         product.timestamp,
+        //         product.location,
+        //         product.state, 
+        //         product.additionalInfo,
+        //         { value: ethers.utils.parseEther(`${i + 1}`) }
+        //     );
+        //     await tx.wait();
 
-            await this.wait(1.5);
-            // leave first product in created state
-            // if on second product, update to in transit
-            if (i == 1) {
-                await provenance.connect(
-                    this.seeders[i]
-                ).updateRecord(
-                    ethers.utils.arrayify(encodeProductId(
-                        this.seeders[i].address,
-                        1
-                    )), // product id
-                    currentTimestamp, // timestamp
-                    "Sent from warehouse", // location
-                    State.InTransit, // state
-                    "First update" // note
-                );
-                await this.wait(1.5);
-            } else if (i == 2) { // if on third product, update to completed
-                await provenance.connect(
-                    this.seeders[i]
-                ).updateRecord(
-                    ethers.utils.arrayify(encodeProductId(
-                        this.seeders[i].address, // creator
-                        1 // nonce
-                    )), // product id
-                    currentTimestamp, // timestamp
-                    "Received at store", // location
-                    State.Completed, // state
-                    "Final update" // note
-                );
-                await this.wait(1.5);
-            }
+        //     // leave first product in created state
+        //     // if on second product, update to in transit
+        //     if (i == 1) {
+        //         let tx = await provenance.connect(
+        //             this.seeders[i]
+        //         ).updateRecord(
+        //             ethers.utils.arrayify(encodeProductId(
+        //                 this.seeders[i].address,
+        //                 1
+        //             )), // product id
+        //             currentTimestamp, // timestamp
+        //             "Sent from warehouse", // location
+        //             State.InTransit, // state
+        //             "First update" // note
+        //         );
+        //         await tx.wait();
+        //     } else if (i == 2) { // if on third product, update to completed
+        //         let tx = await provenance.connect(
+        //             this.seeders[i]
+        //         ).updateRecord(
+        //             ethers.utils.arrayify(encodeProductId(
+        //                 this.seeders[i].address, // creator
+        //                 1 // nonce
+        //             )), // product id
+        //             currentTimestamp, // timestamp
+        //             "Received at store", // location
+        //             State.Completed, // state
+        //             "Final update" // note
+        //         );
+        //         await tx.wait();
+        //     }
 
-            console.log(`Record ${i + 1} created and updated`);
-        }
+        //     console.log(`Record ${i + 1} created and updated`);
+        // }
     }
-
-    async wait(seconds: number) {
-        return new Promise(resolve => {
-            setTimeout(resolve, seconds * 1000);
-        });
-    }
-
 }
 
 const seed = new Seed();
@@ -148,18 +143,18 @@ seed.main(
 
 export const items = [
     {
-        name: "Precision Bearings",
-        description: "High-grade bearings for industrial machinery",
+        name: productRecords[0].productName,
+        description: productRecords[0].variety,
         reorderThreshold: 20
     },
     {
-        name: "Semiconductor Wafers",
-        description: "Silicon wafers for chip fabrication",
+        name: productRecords[1].productName,
+        description: productRecords[1].variety,
         reorderThreshold: 35
     },
     {
-        name: "Polypropylene Pellets",
-        description: "Versatile plastic pellets for molding applications",
+        name: productRecords[2].productName,
+        description: productRecords[2].variety,
         reorderThreshold: 30
     }
 ];

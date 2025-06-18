@@ -3,27 +3,22 @@ import { InventoryManagement } from '../../typechain-types';
 import { WebSocketProvider } from '@ethersproject/providers';
 import { BigNumber, Wallet } from 'ethers';
 import mongo from '../database/mongo';
-import { toReadableAmount } from '../helpers';
+import * as deployLogs from '../../logs/supplyChain/deploy.json';
 import dotenv from 'dotenv';
 import { InventoryManagementDocumentBase } from '../database/interfaces';
+import { getResilientProvider } from '../utils/provider';
 dotenv.config();
 
 
 export class InventoryManagementListener {
-    private provider: WebSocketProvider;
     private inventoryManagement: InventoryManagement | undefined;
     private deployer: Wallet;
     private mongo = mongo;
 
-    constructor() {
-        if (!process.env.PROVIDER_URL) {
-            throw new Error("PROVIDER_URL is not set");
-        } else if (!process.env.DEPLOYER_PRIVATE_KEY) {
+    constructor(private provider: WebSocketProvider) {
+        if (!process.env.DEPLOYER_PRIVATE_KEY) {
             throw new Error("DEPLOYER is not set");
         }
-        // Initialize WebSocketProvider
-        const providerUrl = process.env.PROVIDER_URL.replace(/^https?:\/\//, "");
-        this.provider = new ethers.providers.WebSocketProvider(`ws://${providerUrl}`);
         // Initialize deployer
         this.deployer = new ethers.Wallet(
             process.env.DEPLOYER_PRIVATE_KEY, 
@@ -41,6 +36,7 @@ export class InventoryManagementListener {
             return;
         }
         console.log("Listening for InventoryManagement StockUpdated...");
+        // listen for StockUpdated event
         this.inventoryManagement.on('StockUpdated', async (
             itemId: BigNumber, 
             newQuantity: BigNumber, 
@@ -116,4 +112,33 @@ export class InventoryManagementListener {
             console.log("InventoryManagement document updated");
         });
     }
+
+    removeListeners() {
+        if (!this.inventoryManagement) return;
+        this.inventoryManagement.removeAllListeners("StockUpdated");
+        this.inventoryManagement.removeAllListeners("ItemTransferred");
+        console.log("Removed all listeners from InventoryManagement contract.");
+    }
 }
+
+// // initialize websocket provider
+// const raw = process.env.PROVIDER_URL!;
+// // turn http(s):// to ws(s)://
+// const url = raw.replace(/^https?:\/\//, "ws://").replace(/\/$/, "");
+// const invMgtListener = new InventoryManagementListener(
+//     getResilientProvider(url)
+// );
+
+// (async () => {
+//     try {
+//         // initialize contracts
+//         await invMgtListener.setInventoryManagement(deployLogs.contracts.inventoryManagement);
+//         // start listening
+//         console.log("Starting InventoryManagementListener...");
+//         invMgtListener.listenForStockUpdated();
+//         invMgtListener.listenForItemTransferred();
+//         console.log("InventoryManagementListener started successfully.");
+//     } catch (error) {
+//         console.error("Error starting InventoryManagementListener:", error);
+//     }
+// })();

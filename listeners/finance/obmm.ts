@@ -8,20 +8,14 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 export class ObmmListener {
-    private provider: WebSocketProvider;
     private obmm: OrderBook | undefined;
     private deployer: Wallet;
     private mongo = mongo;
 
-    constructor() {
-        if (!process.env.PROVIDER_URL) {
-            throw new Error("PROVIDER_URL is not set");
-        } else if (!process.env.DEPLOYER_PRIVATE_KEY) {
+    constructor(private provider: WebSocketProvider) {
+        if (!process.env.DEPLOYER_PRIVATE_KEY) {
             throw new Error("DEPLOYER is not set");
         }
-        // Initialize WebSocketProvider
-        const providerUrl = process.env.PROVIDER_URL.replace(/^https?:\/\//, "");
-        this.provider = new ethers.providers.WebSocketProvider(`ws://${providerUrl}`);
         // Initialize deployer
         this.deployer = new ethers.Wallet(
             process.env.DEPLOYER_PRIVATE_KEY, 

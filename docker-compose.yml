@@ -1,0 +1,67 @@
+version: "3.8"
+
+x-default-env: &default-env
+  env_file:
+    - .env
+
+networks:
+  decentracore-network:
+    external: true
+
+services:
+  hardhat:
+    <<: *default-env
+    build: .
+    container_name: dc_hardhat
+    command: >
+      npx hardhat node
+      --hostname 0.0.0.0
+      --port 8545
+    ports:
+      - "8545:8545"
+    networks:
+      - decentracore-network
+
+  deploy:
+    <<: *default-env
+    build: .
+    container_name: dc_deploy
+    # wait-on will block until hardhat:8545 is accepting connections
+    command: >
+      sh -c "npx wait-on tcp:hardhat:8545 && npm run deploy"
+    environment:
+      - PROVIDER_URL=http://hardhat:8545
+    depends_on:
+      - hardhat
+    networks:
+      - decentracore-network
+
+  metadata:
+    <<: *default-env
+    build: .
+    container_name: dc_metadata
+    command: npm run metadata
+    environment:
+      - METADATA_PORT=3001
+      - METADATA_URL=http://localhost:3001
+    ports:
+      - "3001:3001"
+    depends_on:
+      - hardhat
+      - deploy
+    networks:
+      - decentracore-network
+
+  listeners:
+    <<: *default-env
+    build: .
+    container_name: dc_listeners
+    command: npm run listen
+    environment:
+      - PROVIDER_URL=http://hardhat:8545
+    depends_on:
+      - hardhat
+      - deploy
+      - metadata
+    networks:
+      - decentracore-network

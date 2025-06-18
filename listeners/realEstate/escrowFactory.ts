@@ -4,29 +4,24 @@ import { WebSocketProvider } from '@ethersproject/providers';
 import { BigNumber, Wallet } from 'ethers';
 import mongo from '../database/mongo';
 import { RealEstateDocument } from '../database/interfaces';
+import { getResilientProvider } from '../utils/provider'; // adjust path
 import * as deployLogs from '../../logs/realEstate/deploy.json';
 import dotenv from 'dotenv';
 dotenv.config();
 
 
 export class EscrowFactoryListener {
-    private provider: WebSocketProvider;
     private escrowFactory: EscrowFactory | undefined;
     private deployer: Wallet;
     private escrowManager: Wallet; // lender, appraiser, inspector
     private mongo = mongo;
 
-    constructor() {
-        if (!process.env.PROVIDER_URL) {
-            throw new Error("PROVIDER_URL is not set");
-        } else if (!process.env.DEPLOYER_PRIVATE_KEY) {
+    constructor(private provider: WebSocketProvider) {
+        if (!process.env.DEPLOYER_PRIVATE_KEY) {
             throw new Error("DEPLOYER is not set");
         } else if (!process.env.ESCROW_MANAGER_PRIVATE_KEY) {
             throw new Error("ESCROW_MANAGER_PRIVATE_KEY is not set");
         }
-        // Initialize WebSocketProvider
-        const providerUrl = process.env.PROVIDER_URL.replace(/^https?:\/\//, "");
-        this.provider = new ethers.providers.WebSocketProvider(`ws://${providerUrl}`);
         // Initialize deployer
         this.deployer = new ethers.Wallet(
             process.env.DEPLOYER_PRIVATE_KEY, 
@@ -57,6 +52,7 @@ export class EscrowFactoryListener {
             nonce: BigNumber, // nonce of the escrow
             event
         ) => {
+            console.log("Escrow created. Attempting to save buyer and escrowId to MongoDB...");
             const data: RealEstateDocument = { buyer, escrowId };
             await this.mongo.updateRealEstate(data).catch(err => {
                 console.error("EscrowFactoryListener - Error updating RealEstate document: ", err);
@@ -69,4 +65,26 @@ export class EscrowFactoryListener {
             console.log("EscrowFactoryListener - EscrowCreated event detected. Added finance contract address to escrow contract.");
         });
     }
+
+    removeListeners() {
+        if (!this.escrowFactory) return;
+        this.escrowFactory.removeAllListeners("EscrowCreated");
+        console.log("Removed all listeners from EscrowFactory contract.");
+    }
 }
+
+// const escrowFactoryListener = new EscrowFactoryListener(
+//     getResilientProvider(
+//         process.env.PROVIDER_URL!.replace(/^https?:\/\//, "ws://").replace(/\/$/, "")
+//     )  // replace http(s):// with ws(s)://
+// );
+// escrowFactoryListener.setEscrowFactory(deployLogs['contracts'].escrowFactory).then(() => {
+//     console.log("Successfully set escrow factory address.");
+//     // Start listening for events
+//     console.log("Initializing listener...");
+//     escrowFactoryListener.listenForEscrowCreated(); // listen for escrow created event
+//     console.log("Listener successfully initialized!");
+// }).catch(err => {
+//     console.error("Error setting escrow factory address: ", err);
+//     // process.exit(1);
+// }); // set escrow factory address

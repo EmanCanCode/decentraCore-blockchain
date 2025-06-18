@@ -2,29 +2,23 @@
   "name": "hardhat-project",
   "type": "commonjs",
   "engines": {
-    "node": "18.20.4",
-    "npm": "10.7.0"
+    "node": "22.14.0"
   },
   "scripts": {
-    "test": "npx hardhat test",
-    "compile": "npx hardhat compile",
-    "test-cpamm": "npx hardhat test test/finance/ConstantProduct.ts",
-    "test-csamm": "npx hardhat test test/finance/ConstantSum.ts",
-    "test-obmm": "npx hardhat test test/finance/OrderBook.ts",
-    "test-escrow": "npx hardhat test test/realEstate/Escrow.ts",
-    "test-factory": "npx hardhat test test/realEstate/EscrowFactory.ts",
-    "test-auto": "npx hardhat test test/supplyChain/AutomatedProcess.ts",
-    "test-prov": "npx hardhat test test/supplyChain/Provenance.ts",
-    "test-inv": "npx hardhat test test/supplyChain/InventoryManagement.ts",
-    "deploy-finance": "npx hardhat run scripts/finance/deploy.ts",
-    "seed-finance": "npx hardhat run scripts/finance/seed.ts",
-    "deploy-realEstate": "npx hardhat run scripts/realEstate/deploy.ts",
-    "deploy-supplyChain": "npx hardhat run scripts/supplyChain/deploy.ts",
-    "seed-supplyChain": "npx hardhat run scripts/supplyChain/seed.ts",
-    "metadata": "npx hardhat run scripts/realEstate/metadata/metadataManager.ts",
-    "listen": "npx hardhat run listeners/manager.ts",
+    "deploy-finance": "npx hardhat run scripts/finance/deploy.ts --network localhost",
+    "seed-finance": "npx hardhat run scripts/finance/seed.ts --network localhost",
+    "deploy-realEstate": "npx hardhat run scripts/realEstate/deploy.ts --network localhost",
+    "deploy-supplyChain": "npx hardhat run scripts/supplyChain/deploy.ts --network localhost",
+    "seed-supplyChain": "npx hardhat run scripts/supplyChain/seed.ts --network localhost",
+    "metadata": "npx hardhat run scripts/realEstate/metadata/manager.ts --network localhost",
+    "listen": "npx hardhat run listeners/manager.ts --network localhost",
+    "listen-f": "npx hardhat run listeners/finance/manager.ts --network localhost",
+    "listen-inv": "npx hardhat run listeners/supplyChain/inventoryManagement.ts --network localhost",
+    "listen-prov": "npx hardhat run listeners/supplyChain/provenance.ts --network localhost",
+    "listen-re": "npx hardhat run listeners/realEstate/escrowFactory.ts --network localhost",
     "deploy": "npm run deploy-finance && npm run deploy-supplyChain && npm run deploy-realEstate",
-    "seed": "npm run seed-finance && npm run seed-supplyChain"
+    "seed": "npm run seed-finance && npm run seed-supplyChain",
+    "serve": "npx hardhat run scripts/server.ts --network localhost"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^1.0.3",
@@ -36,6 +30,7 @@
     "@types/node-fetch": "^2.6.2",
     "@types/sha256": "^0.2.0",
     "@types/text-encoding": "^0.0.36",
+    "@types/ws": "^8.18.1",
     "hardhat": "^2.11.1",
     "ts-node": "^10.9.1",
     "typescript": "^4.8.3"
@@ -58,14 +53,16 @@
     "ethers": "^5.7.0",
     "express": "^4.21.2",
     "hardhat-gas-reporter": "^1.0.9",
+    "helmet": "^8.1.0",
     "keccak": "^3.0.4",
     "mongo": "^0.1.0",
     "nodemon": "^2.0.21",
     "secp256k1": "^5.0.0",
     "sha256": "^0.2.0",
-    "solidity-coverage": "^0.8.2",
+    "solidity-coverage": "^0.7.21",
     "text-encoding": "^0.7.0",
     "typechain": "^8.1.0",
-    "web3": "^1.10.2"
+    "web3": "^1.10.2",
+    "ws": "^8.18.2"
   }
 }

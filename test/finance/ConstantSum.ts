@@ -11,7 +11,7 @@ describe("Constant Sum", () => {
     let tokenA: FungibleToken;
     let tokenB: FungibleToken;
     let csamm: ConstantSum;
-    const initialSupply: string = "10000000000000000000000000000000";
+    const initialSupply: string = "10000000000000000000000000000000"; // 
     beforeEach(async () => {
         // get signers
         [owner, ...signers] = await ethers.getSigners();
@@ -88,7 +88,7 @@ describe("Constant Sum", () => {
                 // determine what
                 // try to add liquidity with a different ratio
                 await expect(csamm.connect(owner).addLiquidity(
-                    liquidityAmount, liquidityAmount.add(1)
+                    liquidityAmount, liquidityAmount.mul(2)
                 )).to.be.revertedWith("dx / dy != x / y");
             });
         });
