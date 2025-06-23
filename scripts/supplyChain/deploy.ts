@@ -80,7 +80,7 @@ export class Deploy {
         inventoryManagementAddress: string,
         provenanceAddress: string
     ) {
-        const filePath = path.resolve(__dirname, "../../logs/supplyChain/deploy.json");
+        const filePath = path.resolve(process.cwd(), "logs/supplyChain/deploy.json");
         const deploymentLog = {
             contracts: {
                 automatedProcess: automatedProcessAddress,

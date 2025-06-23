@@ -1,6 +1,12 @@
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
-
+import "./tasks/init-env";
+import "./tasks/gen-keys";
+import "./tasks/migrate-gas";
+import "./tasks/update-frontend-env";
+import "./tasks/update-backend-config";
+import dotenv from 'dotenv';
+dotenv.config();
 const config: HardhatUserConfig = {
   solidity: {
     version: "0.8.24",

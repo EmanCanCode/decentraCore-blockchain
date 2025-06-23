@@ -105,7 +105,7 @@ export class Deploy {
 
     // need to put the deployedContracts in ../../logs/finance/deploy.json
     private saveDeployedContracts(deployedContracts: DeployedContracts) {
-        const filePath = path.resolve(__dirname, "../../logs/finance/deploy.json");
+        const filePath = path.resolve(process.cwd(), "logs/finance/deploy.json");
         const deploymentLog: DeploymentLog = {
             contracts: deployedContracts,
             timestamp: Date.now() // current time

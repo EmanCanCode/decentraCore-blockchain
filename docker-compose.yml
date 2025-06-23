@@ -13,6 +13,8 @@ services:
     <<: *default-env
     build: .
     container_name: dc_hardhat
+    volumes:
+      - ./:/app
     command: >
       npx hardhat node
       --hostname 0.0.0.0
@@ -22,17 +24,44 @@ services:
     networks:
       - decentracore-network
 
-  deploy:
+  migrate-gas:
     <<: *default-env
     build: .
-    container_name: dc_deploy
-    # wait-on will block until hardhat:8545 is accepting connections
+    container_name: dc_migrate_gas
+    volumes:
+      - ./:/app
+    # Wait for hardhat to be up, then run migrate-gas; skip if default keys
     command: >
-      sh -c "npx wait-on tcp:hardhat:8545 && npm run deploy"
+      sh -c "
+        npx wait-on tcp:hardhat:8545 &&
+        npx hardhat migrate-gas --network localhost || echo 'No custom keys detected—skipping migrate-gas';
+      "
     environment:
       - PROVIDER_URL=http://hardhat:8545
     depends_on:
       - hardhat
+    networks:
+      - decentracore-network
+
+  deploy:
+    <<: *default-env
+    build: .
+    container_name: dc_deploy
+    volumes:
+      - ./:/app
+    command: >
+      sh -c "
+        npx wait-on tcp:hardhat:8545 &&
+        npm run deploy &&
+        npx hardhat update-frontend-env --network localhost &&
+        npx hardhat update-backend-config --network localhost &&
+        npm run listen
+      "
+    environment:
+      - PROVIDER_URL=http://hardhat:8545
+    depends_on:
+      - hardhat
+      - migrate-gas
     networks:
       - decentracore-network
 
@@ -40,6 +69,8 @@ services:
     <<: *default-env
     build: .
     container_name: dc_metadata
+    volumes:
+      - ./:/app
     command: npm run metadata
     environment:
       - METADATA_PORT=3001
@@ -47,21 +78,28 @@ services:
     ports:
       - "3001:3001"
     depends_on:
-      - hardhat
       - deploy
     networks:
       - decentracore-network
 
-  listeners:
-    <<: *default-env
-    build: .
-    container_name: dc_listeners
-    command: npm run listen
-    environment:
-      - PROVIDER_URL=http://hardhat:8545
-    depends_on:
-      - hardhat
-      - deploy
-      - metadata
-    networks:
-      - decentracore-network
+  # listeners:
+  #   <<: *default-env
+  #   build: .
+  #   container_name: dc_listeners
+  #   volumes:
+  #     - ./:/app
+  #   command: >
+  #     sh -c "npx wait-on \
+  #       'tcp:hardhat:8545' \
+  #       'http://metadata:3001' \
+  #       'logs/finance/deploy.json' \
+  #       'logs/supplyChain/deploy.json' \
+  #       'logs/realEstate/deploy.json' \
+  #     && npm run listen"
+  #   environment:
+  #     - PROVIDER_URL=http://hardhat:8545
+  #   depends_on:
+  #     - metadata
+  #     - deploy
+  #   networks:
+  #     - decentracore-network

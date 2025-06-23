@@ -30,6 +30,11 @@ class Manager {
       methods: ['GET'],       // only permit HTTP GET
     }));
 
+    this.app.use((req, res, next) => {
+      res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+      next();
+    });
+
     // Define the public directory path (assumes public is in the root of DecentralCore)
     const publicDir = path.resolve(__dirname, "../../../public");
     // Setup Express to serve static files from the public directory

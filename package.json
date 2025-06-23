@@ -54,6 +54,7 @@
     "express": "^4.21.2",
     "hardhat-gas-reporter": "^1.0.9",
     "helmet": "^8.1.0",
+    "inquirer": "^12.6.3",
     "keccak": "^3.0.4",
     "mongo": "^0.1.0",
     "nodemon": "^2.0.21",

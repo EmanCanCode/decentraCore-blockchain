@@ -143,7 +143,7 @@ export class Deploy {
         escrowFactoryAddress: string,
         financeAddress: string
     ) {
-        const filePath = path.resolve(__dirname, "../../logs/realEstate/deploy.json");
+        const filePath = path.resolve(process.cwd(), "logs/realEstate/deploy.json");
         const deploymentLog = {
             contracts: {
                 "realEstate": realEstateAddress,
