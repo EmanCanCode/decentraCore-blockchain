@@ -1,211 +1,276 @@
-# DecentraCore
+# DecentraCore — Blockchain Module
 
-DecentraCore is a comprehensive blockchain portfolio project that demonstrates advanced decentralized application development across multiple sectors: Finance, Supply Chain, and Real Estate. The project includes a suite of smart contracts showcasing key concepts such as automated market making, order book trading, product provenance, inventory management, and multi-party real estate escrow via NFTs.
+DecentraCore is a full-stack blockchain platform I engineered from scratch.  
+It demonstrates how **Solidity smart contracts**, **event-driven listeners**, and a **TypeScript API** come together with a modern **Angular frontend**, all orchestrated with **Docker** and deployed securely via **Cloudflare Tunnel**.
 
----
-
-## Table of Contents
-
-- [Overview](#overview)
-- [Requirements](#requirements)
-- [Tech Stack](#tech-stack)
-- [Modules](#modules)
-  - [Finance](#finance)
-  - [Supply Chain](#supply-chain)
-  - [Real Estate](#real-estate)
-  - [Listeners](#listeners)
-  - [Metadata](#metadata)
-- [Deployment & Seeding](#deployment--seeding)
-- [Testing](#testing)
-- [Usage](#usage)
-- [License](#license)
+This module contains the **blockchain layer** of DecentraCore:
+- Smart contracts (AMMs, escrow, provenance, inventory)
+- Deployment and seed scripts
+- Off-chain listeners for events → MongoDB
+- Hardhat tasks and tests
 
 ---
 
-## Overview
+## 📌 Features
 
-DecentraCore brings together several decentralized applications (dApps) to serve as a robust portfolio of blockchain capabilities:
+- **Finance**
+  - Constant Product AMM (`x * y = k`)
+  - Constant Sum AMM (stable swaps)
+  - Experimental On-chain Order Book (OBMM)
+  - Fungible ERC-20 test tokens
 
-- **Finance:**
+- **Real Estate**
+  - Escrow contracts with role-based approvals
+  - EscrowFactory for scalable deployments
+  - ERC-1155 property tokens
+  - Finance contract for lender workflows
 
-  - **Constant Product Automated Market Maker (CPAMM, used by UniSwap, SushiSwap, PancakeSwap etc)**
-  - **Constant Sum Automated Market Maker (CSAMM)**
-  - **Order Book Market Maker**
-  - _(Future: Lend/Borrow, Yield Farms)_
+- **Supply Chain**
+  - Provenance records (immutable history per item)
+  - Inventory management (stock, transfers, reorders)
+  - Automated process integration
 
-- **Supply Chain:**
-
-  - **Product Provenance** tracking
-  - **Inventory Management**
-  - _(Future: Automated Process)_
-
-- **Real Estate:**
-  - **NFTs for Real Estate for sale (ERC1155)**
-  - **Multi-party Escrow** for real estate transactions
-    - Escrow functions: deposit, earnest deposit, sale approval, cancellation, finalization
-
-Each module is designed to be modular and reusable, reflecting production-ready practices while also demonstrating forward-thinking ideas.
-
----
-
-## Requirements
-
-- **Node.js:** v18.20.4
-- **npm:** v10.7.0
+- **Infrastructure**
+  - Hardhat + TypeScript
+  - Event listeners with ethers.js + MongoDB
+  - Dockerized for reproducibility (x86_64 & arm64)
+  - Cloudflare Tunnel for HTTPS at [emancancode.online](https://emancancode.online)
 
 ---
 
-## Tech Stack
+## 🗂️ Repository Structure
 
-- **Solidity (0.8.24)** – smart contract language
-- **Hardhat** – development environment for compiling, testing, and deploying contracts
-- **TypeScript** – scripts, listeners, and back-end code
-- **Ethers.js** – interaction with Ethereum smart contracts
-- **Node.js / Express** – Metadata hosting, locally
-- **MongoDB** – database for off-chain data storage (swaps, escrow states, inventory, etc.)
-- **dotenv** – environment variable management
-- **OpenZeppelin** – reusable libraries for ERC contracts (security, standards)
-
-## Modules
-
-### Finance
-
-- **ConstantProduct.sol (CPAMM)**
-
-  - Implements a constant product automated market maker with a 0.3% fee.
-  - Facilitates liquidity provision, swapping, and fee collection.
-
-- **ConstantSum.sol (CSAMM)**
-
-  - Implements a constant sum AMM with a 0.3% fee.
-  - Provides an alternative liquidity pool mechanism with a simpler invariant.
-
-- **OrderBook.sol**
-  - A decentralized order book allowing token deposits, withdrawals, order creation, cancellation, and execution.
-  - Emits events for order lifecycle actions for off-chain indexing and transparency.
-
-### Supply Chain
-
-- **Provenance.sol**
-
-  - Tracks the lifecycle of a product or batch using a unique product ID.
-  - Records events (e.g., Created, InTransit, Completed) with details such as product name, variety, product type, timestamp, location, and additional information.
-  - Provides an immutable audit trail of product history.
-
-- **InventoryManagement.sol**
-  - Manages inventory for registered items.
-  - Allows the owner to register new items, update stock (inbound, outbound, adjustments), record transfers between locations, and update reorder thresholds.
-  - Maintains a transaction history for each item and provides functions to check if stock is below the reorder threshold.
-
-### Real Estate
-
-- **RealEstate.sol (ERC1155 NFT)**
-
-  - Represents real estate assets as NFTs.
-  - Enables minting of property NFTs with associated metadata via URIs.
-
-- **Escrow.sol**
-
-  - Multi-party escrow contract for real estate transactions.
-  - Supports deposit, earnest deposit, sale approval, sale cancellation, and sale finalization.
-
-- **EscrowFactory.sol**
-  - Factory contract for deploying new Escrow contracts.
-  - Implements signature verification and nonce-based replay protection.
-  - Handles NFT transfers to newly deployed escrow contracts and tracks each escrow with a unique identifier.
+```
+contracts/       # Solidity contracts (Finance, Real Estate, Supply Chain)
+listeners/       # Event listeners (TypeScript)
+scripts/         # Deployment & seed scripts
+tasks/           # Hardhat tasks (keygen, env update, gas migrate)
+logs/            # Deploy logs (per domain)
+test/            # Hardhat tests per contract
+hardhat.config.ts
+docker-compose.yml
+Dockerfile
+package.json
+```
 
 ---
 
-### Listeners
-- **Finance Listeners**: Capture swap events (CPAMM, CSAMM) and order events (OBMM), updating MongoDB with trade volume, fees, and order lifecycle.
-- **Supply Chain Listeners**: Track product record events (Provenance) and inventory changes (InventoryManagement).
-- **Real Estate Listeners**: Optional, capturing escrow creations and completions.
+## ⚙️ Architecture Overview
 
-### Metadata
-- Manages JSON metadata for Real Estate NFTs (ERC-1155) and references for Supply Chain items.
-- Hosted via a simple server (or IPFS in the future), linking URIs to the tokens’ metadata on-chain.
+```
+┌──────────────┐      WebSocket Events      ┌──────────────┐
+│  Solidity    │  ───────────────────────▶  │  Listeners   │
+│  Contracts   │                            │  (TS/Ethers) │
+└─────┬────────┘                            └──────┬───────┘
+      │  on-chain state                           │  aggregate & transform
+      ▼                                           ▼
+  (Hardhat / RPC)                           ┌──────────────┐
+                                           │  MongoDB     │
+                                           │  (metrics)   │
+                                           └──────┬───────┘
+                                                  │ REST/Graph
+                                                  ▼
+                                            ┌──────────────┐
+                                            │   API        │
+                                            │ (Express/TS) │
+                                            └──────┬───────┘
+                                                  │ JSON
+                                                  ▼
+                                            ┌──────────────┐
+                                            │  Frontend    │
+                                            │ (Angular)    │
+                                            └──────────────┘
+```
 
-**Metadata Steps:**
-1. Create .env file in project rool and add the following variables:
-    ```bash
-      METADATA_PORT=3001 #example
-      METADATA_URL=http://127.0.0.1:3001 # url and port number, needs to match the port above
-    ```
-2. Run metadata with:
-    ```bash
-      npm run metadata
-    ```
+---
 
-## Deployment & Seeding
+## 🔎 Deep Dive: Smart Contracts
 
-Each module is designed to be deployed independently. The contracts have been developed using Solidity 0.8.24 and tested with Hardhat. The project follows industry best practices for security and modular design.
+### 1. Finance (AMMs)
+- **Constant Product AMM** implements the invariant `x * y = k`.  
+  - Enforces slippage-aware pricing for volatile token pairs.
+  - Applies a 0.3% fee on every trade (configurable).
+  - Protects liquidity provision with ratio checks (tolerance enforced).
+- **Constant Sum AMM** implements a linear invariant `x + y = C`.  
+  - Suitable for stable assets (e.g., stablecoin-to-stablecoin).
+  - Also charges a 0.3% fee, collected in reserves.
+- **ERC-20 Tokens** are bundled for test liquidity and swaps.
+- **Order Book Market Maker (OBMM)** (experimental).  
+  - Inspired by traditional exchange mechanics.
+  - Allows users to place, fill, and cancel limit orders at specified prices.
+  - Deferred for now, but the scaffolding demonstrates bridging AMM math with central-limit-order logic.
 
-**Deployment Steps:**
+**Event Listeners**:  
+- Subscribe to `Swapped`, `AddedLiquidity`, and `RemovedLiquidity`.  
+- Calculate aggregate metrics (total swaps, total volume, total fees).  
+- Update MongoDB’s `finance` collection with cumulative state.
 
-1. Clone the repository.
-2. Install dependencies with:
-   ```bash
-     npm install
-   ```
-3. Create .env file in project rool with the following variables:
-    ```bash
-        PROVIDER_URL=http://127.0.0.1:8545 # this would be if its local
-        DEPLOYER_PRIVATE_KEY=0xabc123...   # private key of deployer
-        SEEDER1_PRIVATE_KEY=0xabc123...   # private key of seeder 1
-        SEEDER2_PRIVATE_KEY=0xabc123...   # private key of seeder 2
-        SEEDER3_PRIVATE_KEY=0xabc123...   # private key of seeder 3
-        SEEDER4_PRIVATE_KEY=0xabc123...   # private key of seeder 4
-        SEEDER5_PRIVATE_KEY=0xabc123...   # private key of seeder 5
-    ```
-4. Deploy to your local network with:
-   ```bash
-    npx hardhat node
-   ```
-5. Open a new tab to project path in terminal and run:
-   ```bash
-    npm run deploy
-   ```
+---
 
-**Seeding Steps:**
-1. Follow all steps in [Deployment & Seeding](#deployment--seeding).
-2. Open a new tab to project path in terminal and run:
-    ```bash
-      npm run seed
-    ```
+### 2. Real Estate (EscrowFactory + NFTs)
+- **Escrow** contracts manage real-world style property sales:
+  - Tracks states (`Created → Active → Completed/Cancelled`).
+  - Requires multi-party approvals (buyer, seller, inspector, appraiser, lender).
+  - Enforces earnest deposit and final settlement rules.
+  - Distributes fees (1%) back to the factory/owner.
+  - Transfers ERC-1155 property NFTs upon completion.
+- **EscrowFactory**:
+  - Deploys new escrows with validated parameters.
+  - Emits `EscrowCreated` event.
+  - Links each escrow with a `Finance` contract if lender financing is required.
+- **ERC-1155 NFTs**:
+  - Represent unique property assets.
+  - Metadata includes category (Single-Family, Multi-Family, Luxury).
+  - **Metadata Hosting**: NFT metadata is served via a local Express/MongoDB service.  
+    - Metadata JSON is written during seeding/deployment.  
+    - Example:  
+      ```json
+      {
+        "name": "Luxury Villa",
+        "description": "On-chain escrowed real estate asset",
+        "image": "https://emancancode.online/assets/nfts/luxury_villa.png",
+        "attributes": [
+          {"trait_type": "Category", "value": "Luxury"},
+          {"trait_type": "EscrowState", "value": "Created"}
+        ]
+      }
+      ```
 
-## Testing
+**Event Listeners**:  
+- EscrowFactory listener subscribes to `EscrowCreated`.  
+  - Inserts buyer/escrowId into MongoDB.  
+  - Calls `setFinanceContract()` automatically for new escrows.  
+- Escrow listener updates MongoDB on completion → removes the escrow record.
 
-**Testing Steps:**
+---
 
-1. Clone the repository.
-2. Install dependencies with:
-    ```bash
-      npm install
-    ```
-3. Compile contracts with:
-    ```
-      npx hardhat compile
-    ```
-4. Run test with:
-    ```bash
-      npx hardhat test
-    ```
+### 3. Supply Chain (Provenance + Inventory)
+- **Provenance Contract**:
+  - Appends lifecycle events to immutable product histories.
+  - Uses `creator + nonce` scheme for globally unique IDs.
+  - Emits `CreatedRecord` and `UpdatedRecord` with product details.
+- **InventoryManagement Contract**:
+  - Tracks stock movements (`Inbound`, `Outbound`).
+  - Enforces sufficient stock before outbound transactions.
+  - Logs structured transactions with metadata (`location`, `note`, `user`).
+  - Supports reorder thresholds through `AutomatedProcess`.
+- **AutomatedProcess**:
+  - Manages escrowed value for automated supply chain events.
+  - Integrates with Provenance and InventoryManagement when payments are required.
 
-## Usage
+**Event Listeners**:  
+- Provenance listener subscribes to `CreatedRecord`.  
+  - Updates `supplyChain` collection in MongoDB with record counts and value processed.  
+- Inventory listener subscribes to `StockUpdated`.  
+  - Updates stock totals, outbound counts, and potential reorder triggers.
 
-### Finance Modules:
+---
 
-Interact with the AMM and order book contracts via Web3 interfaces (e.g., using Ethers.js or Web3.js) to provide liquidity, execute trades, and monitor fee distributions.
+## 🚀 Getting Started
 
-### Supply Chain Modules:
+### Prerequisites
+- Node.js 22.x (or use Docker)
+- Docker & Docker Compose
+- MongoDB (local container or external)
 
-- Use the Provenance contract to create and update product lifecycle events, establishing an immutable audit trail for products or batches.
-- Manage inventory through the Inventory Management contract to register items, update stock levels, record transfers, and trigger reorder alerts based on threshold conditions.
+### Install dependencies
+```bash
+npm install
+```
 
-### Real Estate Modules:
+### Compile contracts
+```bash
+npx hardhat compile
+```
 
-Mint and manage property NFTs using the RealEstate contract, and process real estate transactions via the Escrow and EscrowFactory contracts. The escrow system ensures that all parties (buyer, seller, inspector, appraiser, and lender if applicable) are involved before finalizing a sale.
+### Run tests
+```bash
+npx hardhat test
+```
 
-## License
+### Start a local chain
+```bash
+npx hardhat node
+```
 
-This project is licensed under the MIT License.
+### Deploy contracts
+```bash
+npx hardhat run scripts/deploy.ts --network localhost
+```
+
+### Seed contracts
+```bash
+npx hardhat run scripts/seed.ts --network localhost
+```
+
+### Run listeners
+```bash
+npm run listen-f      # Finance listeners
+npm run listen-sc1    # Inventory listener
+npm run listen-sc2    # Provenance listener
+npm run listen-re     # Escrow factory listener
+```
+
+---
+
+## 🐳 Docker Usage
+
+Build and run everything (chain + listeners + MongoDB):
+
+```bash
+docker compose up --build
+```
+
+Example services (from `docker-compose.yml`):
+- `hardhat` – blockchain node
+- `deploy` – runs deploy scripts
+- `listeners` – finance / supply chain / real estate event listeners
+- `mongo` – database
+- `frontend` – Angular build served by Nginx (in full stack)
+- `api` – Express/TypeScript backend
+
+---
+
+## 🧪 Tests
+
+Each domain has dedicated Hardhat tests:
+- **Finance** – AMM invariants, slippage, fee accounting
+- **Real Estate** – escrow state machine, role approvals, cancellations
+- **Supply Chain** – provenance immutability, stock transfers, automated processes
+
+Run all tests:
+```bash
+npx hardhat test
+```
+
+---
+
+## 🔐 Security Notes
+
+- Contracts use safe math and explicit state checks
+- Listeners reconnect automatically on WebSocket drop
+- MongoDB should not be exposed publicly (use Docker networking or VPN)
+- Secrets (.env, keys) are not committed to git
+
+---
+
+## 📈 Roadmap
+
+- [ ] Runtime config for frontend (fetch from `assets/config.json`)
+- [ ] More granular escrow events (`ApprovalUpdated`, deadlines)
+- [ ] Geospatial encoding in supply chain events
+- [ ] TWAP/price oracle for AMMs
+- [ ] Backup/restore container for MongoDB
+
+---
+
+## 📚 Portfolio Context
+
+This blockchain module is part of the larger **DecentraCore** project, which also includes:
+- A **backend API** (Express/TS)
+- A **frontend app** (Angular)
+- Infrastructure for deployment on both **PC** and **Raspberry Pi (arm64)** with Docker Buildx
+
+**Live demo:** [https://emancancode.online](https://emancancode.online)  
+**Author:** [EmanCanCode](https://github.com/EmanCanCode)
+**License:** MIT
