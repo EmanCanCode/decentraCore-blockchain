@@ -1,4 +1,4 @@
-version: "3.8"
+# version: "3.8"
 
 x-default-env: &default-env
   env_file:
@@ -53,6 +53,7 @@ services:
       sh -c "
         npx wait-on tcp:hardhat:8545 &&
         npm run deploy &&
+        npm run seed &&
         npx hardhat update-frontend-env --network localhost &&
         npx hardhat update-backend-config --network localhost &&
         npm run listen

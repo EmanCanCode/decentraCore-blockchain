@@ -128,6 +128,10 @@ export class Seed {
                 await tx.wait();
             }
 
+            console.log("Liquidity added to CPAMM \n");
+            console.log("CPAMM - Token A reserves: ", (await cpamm.reserveA()).toString() + '\n');
+            console.log("CPAMM - Token B reserves: ", (await cpamm.reserveB()).toString() + '\n');
+
         }
 
         // if CSAMM is deployed, seed it
@@ -141,15 +145,15 @@ export class Seed {
 
             tx = await tokenB.connect(this.deployer).approve(csamm.address, oneBillionTokens);
             await tx.wait();
-            
+
             tx = await csamm.connect(this.deployer).addLiquidity(
                 oneBillionTokens,
                 oneBillionTokens
             );
             await tx.wait();
-            // console.log("Liquidity added to CSAMM \n");
-            // console.log("CSAMM - Token A reserves: ", (await csamm.reserveA()).toString() + '\n');
-            // console.log("CSAMM - Token B reserves: ", (await csamm.reserveB()).toString() + '\n');
+            console.log("Liquidity added to CSAMM \n");
+            console.log("CSAMM - Token A reserves: ", (await csamm.reserveA()).toString() + '\n');
+            console.log("CSAMM - Token B reserves: ", (await csamm.reserveB()).toString() + '\n');
 
             // // seeders make swaps
             // for (let i = 0; i < this.seeders.length; i++) {
@@ -182,7 +186,7 @@ export class Seed {
         if (contracts.OBMM) {
             // create obmm instance
             const obmm = await ethers.getContractAt("OrderBook", contracts.OBMM, this.deployer);
-            
+
             // deposits
             for (let i = 0; i < this.seeders.length; i++) {
                 // deposit ether
@@ -218,7 +222,7 @@ export class Seed {
                     tokenA.address,
                     seederBalance.div(5) // they should make order 1/5 of their balance every time (use whole balance)
                 );
-                
+
             }
 
 
@@ -233,7 +237,7 @@ export class Seed {
                     tokenB.address,
                     seederBalance.div(5) // they should make order 1/5 of their balance every time (use whole balance)
                 );
-                
+
             }
 
 
@@ -248,7 +252,7 @@ export class Seed {
                     tokenA.address,
                     seederBalance.div(5) // they should make order 1/5 of their balance every time (use whole balance)
                 );
-                
+
             }
 
             // seeder 4 fills some orders
@@ -265,7 +269,7 @@ export class Seed {
             const ordersToFill = [1, 2, 6, 7, 11, 12];
             for (let order of ordersToFill) {
                 await obmm.connect(this.seeders[3]).fillOrder(order);
-                
+
             }
 
             // seeder 5 makes multiple orders - cancels all orders
@@ -276,7 +280,7 @@ export class Seed {
                 tokenA.address,
                 ethers.utils.parseEther('100')
             );
-            
+
             const orderIdToCancel = await obmm.orderCount();
             // cancel order
             await obmm.connect(this.seeders[4]).cancelOrder(orderIdToCancel);
